@@ -32,7 +32,7 @@
             overflow-x: hidden;
         }
 
-        /* Оригинальная плотность шрифта DotGothic16 (как на твоём первом скриншоте) */
+        /* Оригинальная плотность шрифта DotGothic16 */
         .font-dot {
             font-family: 'DotGothic16', monospace;
             letter-spacing: 0.02em;
@@ -47,13 +47,20 @@
             transform: translateZ(0);
         }
 
-        /* ==================== КОНТЕЙНЕР САЙТА И ЭФФЕКТ ПИКСЕЛИЗАЦИИ ПРИ СРАБАТЫВАНИИ ЗАТВОРА ==================== */
+        /* ==================== КОНТЕЙНЕР САЙТА И ЭФФЕКТ ПИКСЕЛИЗАЦИИ ==================== */
         #app-viewport {
-            transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+            transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1), filter 0.25s ease;
         }
 
         #app-viewport.shutter-pixel-active {
             filter: url(#shutter-pixelate-filter) contrast(1.08);
+        }
+
+        /* При открытии фото на телефоне задний фон сайта пикселизируется и слегка темнеет */
+        body.mobile-lightbox-open #app-viewport {
+            filter: url(#mobile-lightbox-pixel-filter) brightness(0.72) contrast(1.08);
+            pointer-events: none;
+            user-select: none;
         }
 
         #shutter-pixel-grid-overlay {
@@ -103,10 +110,34 @@
             display: block;
         }
 
-        /* При сужении окна браузера на ноутбуке портрет плавно смещается левее пропорционально окну и никогда не режется справа */
+        /* При сужении окна браузера по ширине портрет плавно смещается левее */
         @media (min-width: 640px) and (max-width: 1150px) {
             #hero-me-transform-box {
                 transform: translate3d(calc(var(--me-x) - 6%), var(--me-y), 0) scale(1.62);
+            }
+        }
+
+        /* АДАПТАЦИЯ ПОД WINDOWS-НОУТБУКИ С МАСШТАБИРОВАНИЕМ 125%-150% И ЭКРАНАМИ 16:9 (НЕ ТРОГАЕТ MACBOOK PRO) */
+        @media (min-width: 640px) and (max-height: 820px) {
+            .hero-content-col {
+                padding-top: 2vh !important;
+                padding-bottom: 2vh !important;
+            }
+            .hero-title-desktop {
+                font-size: clamp(1.75rem, 4.4vh, 2.75rem) !important;
+                line-height: 1.28 !important;
+                margin-bottom: 3.8vh !important;
+            }
+            .hero-sub-desktop {
+                font-size: clamp(0.95rem, 2.2vh, 1.2rem) !important;
+                margin-bottom: 2.2vh !important;
+            }
+            #card-portraits,
+            #card-reportage {
+                height: clamp(120px, 22vh, 195px) !important;
+            }
+            #card-reportage {
+                margin-top: 4.2vh !important;
             }
         }
 
@@ -165,7 +196,6 @@
                 margin-left: 41vw !important;
             }
 
-            /* На телефоне портрет закреплён к левому нижнему углу, сдвинут сильнее влево (как на ПК) и вообще не имеет режущей рамки */
             .hero-photo-col {
                 position: absolute !important;
                 left: 0;
@@ -182,6 +212,49 @@
                 transform-origin: bottom left;
                 transform: translate3d(-77%, 9%, 0) scale(1.62);
             }
+        }
+
+        /* ==================== МОБИЛЬНЫЙ ПРОСМОТРЩИК ФОТО (LIGHTBOX ТОЛЬКО НА ТЕЛЕФОНАХ) ==================== */
+        #mobile-photo-lightbox {
+            position: fixed;
+            inset: 0;
+            z-index: 9985;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background-color: rgba(12, 12, 12, 0.56);
+            background-image:
+                linear-gradient(to right, rgba(0, 0, 0, 0.24) 2px, transparent 2px),
+                linear-gradient(to bottom, rgba(0, 0, 0, 0.24) 2px, transparent 2px);
+            background-size: 12px 12px;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.24s cubic-bezier(0.22, 1, 0.36, 1);
+        }
+
+        #mobile-photo-lightbox.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        #mobile-lightbox-img {
+            max-width: 92vw;
+            max-height: 74dvh;
+            width: auto;
+            height: auto;
+            object-fit: contain;
+            box-shadow: 0 24px 60px rgba(0, 0, 0, 0.65);
+            border: 1px solid rgba(255, 255, 255, 0.22);
+            background: #111;
+            transform: scale(0.92) translateY(12px);
+            transition: transform 0.26s cubic-bezier(0.22, 1, 0.36, 1);
+            user-select: none;
+            -webkit-user-drag: none;
+        }
+
+        #mobile-photo-lightbox.active #mobile-lightbox-img {
+            transform: scale(1) translateY(0);
         }
 
         /* ==================== ЛАМЕЛЬНЫЙ ЗАТВОР FUJIFILM X-T4 ==================== */
@@ -430,6 +503,29 @@
     <!-- РЕЗЕРВНЫЙ КЛАССИЧЕСКИЙ ЗАТВОР -->
     <div id="classic-shutter-backup"></div>
 
+    <!-- МОБИЛЬНЫЙ ПРОСМОТРЩИК ФОТО (ОТКРЫВАЕТСЯ ТОЛЬКО НА СМАРТФОНАХ ПРИ КЛИКЕ НА КАДР) -->
+    <div id="mobile-photo-lightbox" onclick="handleLightboxBackdropClick(event)">
+        <button onclick="closeMobileLightbox(event)" class="fixed top-4 right-4 z-50 bg-white/90 text-[#111] font-dot text-sm px-3.5 py-1.5 border border-black/30 shadow-md active:scale-95 transition-transform">
+            ✕ закрыть
+        </button>
+
+        <div class="relative flex items-center justify-center w-full px-3">
+            <img id="mobile-lightbox-img" src="" alt="" draggable="false" oncontextmenu="return false;" />
+        </div>
+
+        <div class="fixed bottom-6 left-0 right-0 flex items-center justify-center gap-5 z-50 px-6" onclick="event.stopPropagation()">
+            <button onclick="stepMobileLightbox(-1)" class="bg-white/90 text-[#111] font-dot text-lg px-5 py-2 border border-black/30 shadow-md active:scale-95 transition-transform select-none">
+                ←
+            </button>
+            <span id="mobile-lightbox-counter" class="font-dot text-xs text-white bg-black/75 px-3 py-1.5 border border-white/20 select-none">
+                1 / 1
+            </span>
+            <button onclick="stepMobileLightbox(1)" class="bg-white/90 text-[#111] font-dot text-lg px-5 py-2 border border-black/30 shadow-md active:scale-95 transition-transform select-none">
+                →
+            </button>
+        </div>
+    </div>
+
     <!-- ПАНЕЛЬ КОНСТРУКТОРА ДЛЯ АВТОРА (вызывается по Shift + Option + E на Mac или ?edit=1) -->
     <div id="admin-layout-bar" class="hidden fixed bottom-4 right-4 left-4 sm:left-auto z-50 bg-[#111] text-white font-dot text-xs px-4 py-3.5 shadow-2xl flex flex-col gap-3 border border-white/20 max-w-md">
         <div class="flex items-center justify-between gap-4 border-b border-white/15 pb-2">
@@ -466,22 +562,22 @@
     <!-- КОНТЕЙНЕР САЙТА -->
     <div id="app-viewport">
 
-        <!-- ==================== СТРАНИЦА 1: ГЛАВНАЯ (ТОЧЬ-В-ТОЧЬ ОРИГИНАЛЬНЫЕ ПРОПОРЦИИ НА МАКЕ) ==================== -->
+        <!-- ==================== СТРАНИЦА 1: ГЛАВНАЯ ==================== -->
         <main id="page-home" class="page-view h-screen w-screen overflow-hidden bg-white flex flex-col sm:flex-row">
             <div class="w-full flex-1 grid grid-cols-1 sm:grid-cols-12 h-full relative">
                 
-                <!-- Правая колонка с текстом и карточками (оригинальные классы и размеры с твоего первого скриншота) -->
+                <!-- Правая колонка с текстом и карточками -->
                 <div class="hero-content-col order-1 sm:order-2 col-span-1 sm:col-span-7 flex flex-col justify-center px-6 pt-12 pb-6 sm:px-10 lg:py-0 lg:px-20 z-20">
                     
                     <div class="max-w-xl w-full mx-auto sm:mx-0">
-                        <h1 data-editable-text="heroTitle" class="hero-title-mobile font-dot text-2xl sm:text-3xl md:text-4xl lg:text-5xl leading-snug text-[#111] mb-8 sm:mb-12 lg:mb-16">привет!<div>я женя, фотограф<br>из звенигорода.</div></h1>
+                        <h1 data-editable-text="heroTitle" class="hero-title-mobile hero-title-desktop font-dot text-2xl sm:text-3xl md:text-4xl lg:text-5xl leading-snug text-[#111] mb-8 sm:mb-12 lg:mb-16">привет!<div>я женя, фотограф<br>из звенигорода.</div></h1>
 
                         <div>
-                            <div data-editable-text="heroSub" class="hero-sub-mobile font-dot text-base sm:text-xl mb-5 sm:mb-8 text-[#111]">мои работы:</div>
+                            <div data-editable-text="heroSub" class="hero-sub-mobile hero-sub-desktop font-dot text-base sm:text-xl mb-5 sm:mb-8 text-[#111]">мои работы:</div>
 
                             <div class="hero-cards-mobile grid grid-cols-2 gap-4 sm:gap-8 steam-card-wrapper">
                                 
-                                <!-- Карточка: портреты (оригинальная высота h-36 sm:h-52) -->
+                                <!-- Карточка: портреты -->
                                 <div id="card-portraits" onclick="switchPage('portraits')" class="steam-card meta-box cursor-pointer h-36 sm:h-44 lg:h-52 flex items-center justify-center bg-[#F4F4F2]">
                                     <div class="card-grid-layer-blurred card-grid-6x3" data-grid-role="blurred"></div>
                                     <div class="card-grid-layer-sharp card-grid-6x3" data-grid-role="sharp"></div>
@@ -491,7 +587,7 @@
                                     </span>
                                 </div>
 
-                                <!-- Карточка: репортаж (оригинальная высота h-36 sm:h-52 и сдвиг sm:mt-12) -->
+                                <!-- Карточка: репортаж -->
                                 <div id="card-reportage" onclick="switchPage('reportage')" class="steam-card meta-box cursor-pointer h-36 sm:h-44 lg:h-52 flex items-center justify-center bg-[#F4F4F2] sm:mt-12">
                                     <div class="card-grid-layer-blurred card-grid-6x3" data-grid-role="blurred"></div>
                                     <div class="card-grid-layer-sharp card-grid-6x3" data-grid-role="sharp"></div>
@@ -507,7 +603,7 @@
 
                 </div>
 
-                <!-- Левая колонка: Автопортрет me.webp без режущей правой границы (overflow-visible) -->
+                <!-- Левая колонка: Автопортрет me.webp без режущей правой границы -->
                 <div class="hero-photo-col order-2 sm:order-1 col-span-1 sm:col-span-5 h-full bg-transparent select-none relative mt-auto">
                     <div id="hero-me-transform-box">
                         <img id="hero-me-photo" 
@@ -545,7 +641,6 @@
                     <h2 data-editable-text="portraitsTitle" class="font-dot text-2xl sm:text-4xl mb-4">портреты</h2>
                     <p data-editable-text="portraitsIntro" class="font-dot text-sm sm:text-lg text-neutral-600 leading-relaxed">самый любимый жанр, мне нравится сложность человеческого лица и пластики тела.<br><br>здесь собраны разные микро жанры - кампейнов до психологического портрета.<br><br>главное, что я хочу показать — как я работаю с образом и какие стилистические решения принимаю.</p>
                 </div>
-                <!-- 12-колоночная сетка активна и на телефоне (grid-cols-12), чтобы карточки шли по 2-3 в ряд с сохранением пропорций -->
                 <div id="portraits-sortable-grid" class="grid grid-cols-12 gap-x-2.5 gap-y-4 sm:gap-y-12 md:gap-x-8 lg:gap-x-10 items-start">
                 </div>
             </section>
@@ -569,7 +664,6 @@
                     <p data-editable-text="reportageIntro" class="font-dot text-sm sm:text-lg text-neutral-600 leading-relaxed">вызов для моего перфекционизма. я привык к тонкому индивидуальному подходу, а в репортаже вокруг — десятки незнакомых людей и полный хаос.<br><br>но именно через преодоление страха рождаются эти кадры: здесь видно, как я вылавливаю моменты и взаимодействую с людьми.</p>
                 </div>
 
-                <!-- 12-колоночная сетка активна и на телефоне (grid-cols-12) -->
                 <div id="reportage-sortable-grid" class="grid grid-cols-12 gap-x-2.5 gap-y-4 sm:gap-y-12 md:gap-x-8 lg:gap-x-10 items-start">
                 </div>
             </section>
@@ -592,7 +686,7 @@
         <span>@ratnejal</span>
     </a>
 
-    <!-- НАСТОЯЩИЙ SVG-ФИЛЬТР ДИСКРЕТИЗАЦИИ ДЛЯ ПЕРЕХОДА ЗАТВОРА -->
+    <!-- SVG-ФИЛЬТРЫ ДИСКРЕТИЗАЦИИ ДЛЯ ПЕРЕХОДА ЗАТВОРА И МОБИЛЬНОГО ЛАЙТБОКСА -->
     <svg width="0" height="0" style="position:absolute;pointer-events:none;" aria-hidden="true">
         <defs>
             <filter id="shutter-pixelate-filter" x="0%" y="0%" width="100%" height="100%" color-interpolation-filters="sRGB">
@@ -601,6 +695,13 @@
                 <feTile result="tileGrid" />
                 <feComposite in="SourceGraphic" in2="tileGrid" operator="in" />
                 <feMorphology id="px-dilate" operator="dilate" radius="4" />
+            </filter>
+            <filter id="mobile-lightbox-pixel-filter" x="0%" y="0%" width="100%" height="100%" color-interpolation-filters="sRGB">
+                <feFlood x="4" y="4" width="1" height="1" />
+                <feComposite width="10" height="10" />
+                <feTile result="lbGrid" />
+                <feComposite in="SourceGraphic" in2="lbGrid" operator="in" />
+                <feMorphology operator="dilate" radius="5" />
             </filter>
         </defs>
     </svg>
@@ -615,7 +716,6 @@
         let currentPage = 'home';
         let isShutterAnimating = false;
 
-        // Полный список файлов (используется для генерации карточек и превью-сеток 6x3)
         const PORTRAITS_FILES = [
             'portreit_asciikit-2026-05-10T19-00-39',
             'portreit_DSCF0022',
@@ -804,11 +904,10 @@
             'documental_DSCF4626E'
         ];
 
-        // Реальные размеры исходников ({ w, h })
         const PHOTO_DIMS = {"me":{"w":3724,"h":5586},"pixel_DSCF9900":{"w":6240,"h":4160},"portreit_DSCF0022":{"w":6240,"h":4160},"portreit_DSCF2273":{"w":4091,"h":6137},"portreit_DSCF2279":{"w":4072,"h":4072},"portreit_DSCF2291":{"w":3807,"h":5710},"portreit_DSCF2292":{"w":4018,"h":6027},"portreit_DSCF2296":{"w":4160,"h":6240},"portreit_DSCF2321":{"w":3808,"h":5712},"portreit_DSCF2337":{"w":4160,"h":6240},"portreit_DSCF2346":{"w":4160,"h":6240},"portreit_DSCF2349":{"w":6240,"h":4160},"portreit_DSCF3937E":{"w":4160,"h":6240},"portreit_DSCF3965E":{"w":4160,"h":6240},"portreit_DSCF3973E":{"w":3576,"h":5364},"portreit_DSCF3982E":{"w":4101,"h":6152},"portreit_DSCF3985E2":{"w":4160,"h":6240},"portreit_DSCF3987E2":{"w":4160,"h":6240},"portreit_DSCF4009E2":{"w":4045,"h":6067},"portreit_DSCF4014E2":{"w":4160,"h":6240},"portreit_DSCF4017E2":{"w":4068,"h":6103},"portreit_DSCF4021E2":{"w":4004,"h":6006},"portreit_DSCF4027E2":{"w":3773,"h":5659},"portreit_DSCF4033E2":{"w":3809,"h":5713},"portreit_DSCF4036E2":{"w":4095,"h":6143},"portreit_DSCF4038E2":{"w":4155,"h":6232},"portreit_DSCF4042E2":{"w":4122,"h":6182},"portreit_DSCF4043E2":{"w":4160,"h":6240},"portreit_DSCF6799":{"w":4160,"h":6240},"portreit_DSCF6804":{"w":6127,"h":4085},"portreit_DSCF6827":{"w":4087,"h":6131},"portreit_DSCF6841":{"w":6240,"h":4160},"portreit_DSCF6852":{"w":4160,"h":6240},"portreit_DSCF6856":{"w":4160,"h":6240},"portreit_DSCF6858":{"w":4025,"h":6038},"portreit_DSCF6859":{"w":3940,"h":5910},"portreit_DSCF6896":{"w":6240,"h":4160},"portreit_DSCF6942":{"w":6240,"h":4160},"portreit_DSCF6949":{"w":6240,"h":4160},"portreit_DSCF8501e":{"w":6240,"h":4160},"portreit_DSCF8511e":{"w":1465,"h":2198},"portreit_DSCF8533e":{"w":4160,"h":6240},"portreit_DSCF8541e":{"w":6240,"h":4160},"portreit_DSCF8553e":{"w":2370,"h":3555},"portreit_DSCF9288":{"w":6240,"h":4160},"portreit_DSCF9320":{"w":6240,"h":4160},"portreit_DSCF9350":{"w":6240,"h":4160},"portreit_DSCF9369":{"w":6240,"h":4160},"portreit_DSCF9407":{"w":6240,"h":4160},"portreit_DSCF9454":{"w":6145,"h":4097},"portreit_DSCF9458":{"w":6181,"h":4121},"portreit_DSCF9471":{"w":6240,"h":4160},"portreit_DSCF9485":{"w":4160,"h":6240},"portreit_DSCF9561":{"w":6240,"h":4160},"portreit_DSCF9576":{"w":3299,"h":4948},"portreit_DSCF9597":{"w":4160,"h":6240},"portreit_DSCF9614":{"w":6240,"h":4160},"portreit_DSCF9624":{"w":6240,"h":4160},"portreit_DSCF9633":{"w":6240,"h":4160},"portreit_DSCF9669":{"w":3753,"h":5629},"portreit_DSCF9676":{"w":6240,"h":4160},"portreit_DSCF9685":{"w":6240,"h":4160},"portreit_DSCF9705":{"w":6240,"h":4160},"portreit_DSCF9723":{"w":4160,"h":6240},"portreit_DSCF9747":{"w":4160,"h":6240},"portreit_DSCF9768":{"w":6240,"h":4160},"portreit_DSCF9788":{"w":6240,"h":4160},"portreit_DSCF9816":{"w":6240,"h":4160},"portreit_DSCF9821":{"w":3743,"h":5615},"portreit_DSCF9822":{"w":4160,"h":6240},"portreit_DSCF9857":{"w":6240,"h":4160},"portreit_DSCF9884":{"w":6240,"h":4160},"portreit_DSCF9889":{"w":6240,"h":4160},"portreit_DSCF9890":{"w":6240,"h":4160},"portreit_DSCF9909":{"w":3612,"h":5418},"portreit_DSCF9920":{"w":6240,"h":4160},"portreit_DSCF9935":{"w":4160,"h":6240},"portreit_DSCF9966":{"w":6240,"h":4160},"portreit_DSCF9984":{"w":3686,"h":2458},"portreit_DSCF9985":{"w":4160,"h":6240},"portreit_DSCF9988":{"w":4160,"h":6240},"portreit_DSCF9989":{"w":6240,"h":4160},"portreit_INST_DSCF2758":{"w":2560,"h":1707},"portreit_INST_DSCF2768":{"w":2560,"h":1707},"portreit_INST_DSCF2782":{"w":1707,"h":2560},"portreit_INST_DSCF2797":{"w":2560,"h":1707},"portreit_INST_DSCF2819":{"w":2560,"h":2560},"portreit_INST_DSCF2835":{"w":1707,"h":2560},"portreit_INST_DSCF2842":{"w":1707,"h":2560},"portreit_INST_DSCF2844":{"w":2560,"h":1707},"portreit_INST_DSCF2846":{"w":2560,"h":1707},"portreit_INST_DSCF2874":{"w":2560,"h":1707},"portreit_INST_DSCF2885":{"w":1707,"h":2560},"portreit_INST_DSCF2894":{"w":2560,"h":1707},"portreit_INST_DSCF2896":{"w":2560,"h":1707},"portreit_INST_DSCF2911":{"w":2560,"h":1707},"portreit_INST_DSCF2912":{"w":2560,"h":1707},"portreit_INST_DSCF2916":{"w":2560,"h":1707},"portreit_INST_DSCF2920":{"w":1707,"h":2560},"portreit_INST_DSCF2936":{"w":2560,"h":1707},"portreit_INST_DSCF2976":{"w":2560,"h":1707},"portreit_INST_DSCF3044":{"w":1707,"h":2560},"portreit_INST_DSCF3051":{"w":2560,"h":1707},"portreit_INST_DSCF3054":{"w":1707,"h":2560},"portreit_INST_DSCF3062":{"w":1707,"h":2560},"portreit_INST_DSCF3080":{"w":2560,"h":1707},"portreit_INST_DSCF3102":{"w":2560,"h":1707},"portreit_INST_DSCF3107":{"w":1707,"h":2560},"portreit_INST_DSCF3109":{"w":1707,"h":2560},"portreit_INST_DSCF3144":{"w":1707,"h":2560},"portreit_INST_DSCF3155":{"w":1707,"h":2560},"portreit_INST_DSCF3174":{"w":1707,"h":2560},"portreit_INST_DSCF3182":{"w":2560,"h":1707},"portreit_INST_DSCF3223":{"w":1707,"h":2560},"portreit_INST_DSCF3261":{"w":2560,"h":1707},"portreit_INST_DSCF3270":{"w":2560,"h":1707},"portreit_INST_DSCF3271":{"w":2560,"h":1707},"portreit_INST_DSCF3276":{"w":1707,"h":2560},"portreit_INST_DSCF3278":{"w":2560,"h":1707},"portreit_INST_DSCF3295":{"w":1707,"h":2560},"portreit_INST_DSCF3299":{"w":1707,"h":2560},"portreit_INST_DSCF3310":{"w":2560,"h":1707},"portreit_INST_DSCF3367":{"w":2560,"h":1707},"portreit_INST_DSCF3378":{"w":1707,"h":2560},"portreit_INST_DSCF3379":{"w":1707,"h":2560},"portreit_Ретушь DSCF3916E2":{"w":4619,"h":3079},"portreit_asciikit-2026-05-10T19-00-39":{"w":3240,"h":2160},"documental_DSCF0127":{"w":6240,"h":4160},"documental_DSCF0159":{"w":4160,"h":6240},"documental_DSCF0167":{"w":6240,"h":4160},"documental_DSCF0277":{"w":6240,"h":4160},"documental_DSCF0289":{"w":6240,"h":4160},"documental_DSCF0294":{"w":3480,"h":5220},"documental_DSCF0295":{"w":3499,"h":5248},"documental_DSCF0527":{"w":1954,"h":1303},"documental_DSCF0571":{"w":3428,"h":2286},"documental_DSCF0573":{"w":2303,"h":3455},"documental_DSCF0583":{"w":1808,"h":1205},"documental_DSCF0613":{"w":1869,"h":1246},"documental_DSCF0672":{"w":3851,"h":2568},"documental_DSCF0810":{"w":4312,"h":2875},"documental_DSCF0878":{"w":5510,"h":3674},"documental_DSCF1133":{"w":6240,"h":4160},"documental_DSCF1180":{"w":3624,"h":5436},"documental_DSCF1218":{"w":3872,"h":5807},"documental_DSCF1229":{"w":4010,"h":2674},"documental_DSCF1250":{"w":3907,"h":2605},"documental_DSCF1854":{"w":1714,"h":2571},"documental_DSCF1870":{"w":2745,"h":1830},"documental_DSCF1889":{"w":4160,"h":6240},"documental_DSCF1893":{"w":5895,"h":3930},"documental_DSCF1911":{"w":3999,"h":5999},"documental_DSCF1914":{"w":6240,"h":4160},"documental_DSCF1917":{"w":4160,"h":6240},"documental_DSCF1923":{"w":6240,"h":4160},"documental_DSCF1934":{"w":6240,"h":4160},"documental_DSCF1942":{"w":4160,"h":6240},"documental_DSCF1946":{"w":4160,"h":6240},"documental_DSCF3708E":{"w":4160,"h":6240},"documental_DSCF3715E":{"w":6240,"h":4160},"documental_DSCF3720E":{"w":6240,"h":4160},"documental_DSCF3725E":{"w":4160,"h":6240},"documental_DSCF3729E":{"w":4160,"h":6240},"documental_DSCF3756E":{"w":4160,"h":6240},"documental_DSCF3765E":{"w":4061,"h":2707},"documental_DSCF3772E":{"w":6240,"h":4160},"documental_DSCF3776E":{"w":4160,"h":6240},"documental_DSCF3779E":{"w":6240,"h":4160},"documental_DSCF3780E":{"w":6240,"h":4160},"documental_DSCF3782E":{"w":6240,"h":4160},"documental_DSCF3811E":{"w":2554,"h":3831},"documental_DSCF3817E":{"w":4160,"h":6240},"documental_DSCF3855E":{"w":4160,"h":6240},"documental_DSCF3863E":{"w":3231,"h":4846},"documental_DSCF3897E":{"w":1643,"h":2464},"documental_DSCF4464E":{"w":5973,"h":3982},"documental_DSCF4484E":{"w":4160,"h":6240},"documental_DSCF4495E":{"w":5949,"h":3966},"documental_DSCF4513E":{"w":1567,"h":2350},"documental_DSCF4523E":{"w":4160,"h":6240},"documental_DSCF4567E":{"w":3197,"h":4796},"documental_DSCF4579E":{"w":2213,"h":3319},"documental_DSCF4584E":{"w":5668,"h":3779},"documental_DSCF4626E":{"w":6240,"h":4160}};
 
         /* ==========================================================================
-           ЗАВОДСКАЯ КОНФИГУРАЦИЯ (ТВОЙ ФИНАЛЬНЫЙ JSON + ОТРЕДАКТИРОВАННЫЕ ТЕКСТЫ С АБЗАЦАМИ)
+           ЗАВОДСКАЯ КОНФИГУРАЦИЯ
            ========================================================================== */
         const SAVED_SITE_CONFIG = {
             "meCrop": {
@@ -970,9 +1069,12 @@
             ]
         };
 
-        // Для сетки 6x3 на главной используем только те фото, которые ты оставил в финальной выборке
         const PORTRAITS_THUMBS = SAVED_SITE_CONFIG.portraits.map(item => 'photos/thumbs/' + item.id + '.webp');
         const DOCUMENTAL_THUMBS = SAVED_SITE_CONFIG.reportage.map(item => 'documental/thumbs/' + item.id + '.webp');
+
+        function isMobileViewport() {
+            return window.innerWidth < 640;
+        }
 
         /* ==========================================================================
            0. ГЕНЕРАЦИЯ СЕТКИ 6x3 РАНДОМНЫХ ФОТО В КАРТОЧКАХ РАЗДЕЛОВ + ЛИНЗА РАЗБЛЮРА
@@ -1006,7 +1108,7 @@
         }
 
         /* ==========================================================================
-           1. ЭФФЕКТ КАРТОЧЕК STEAM + СФЕРА РАЗБЛЮРА
+           1. ЭФФЕКТ КАРТОЧЕК STEAM + СФЕРА РАЗБЛЮРА (НА МОБИЛЬНЫХ ОТКЛЮЧЕН ДЛЯ ГАЛЕРЕЙ)
            ========================================================================== */
         function applyCardTiltAndLens(card, clientX, clientY) {
             const glare = card.querySelector('.steam-glare');
@@ -1080,7 +1182,7 @@
             };
 
             window.addEventListener('mousemove', (e) => {
-                if (isShutterAnimating || isEditMode) {
+                if (isShutterAnimating || isEditMode || isMobileViewport()) {
                     if (hoveredCard) {
                         resetCardTilt(hoveredCard);
                         hoveredCard = null;
@@ -1114,10 +1216,13 @@
             window.addEventListener('scroll', remeasureRestRects, { passive: true });
             window.remeasureTiltRects = remeasureRestRects;
 
+            // На смартфонах оставляем 3D-наклон и линзу только на 2 карточках главной страницы, а в галереях работает увеличение
             document.addEventListener('touchstart', (e) => {
                 if (isEditMode) return;
                 const card = e.target.closest('.steam-card');
-                if (card && e.touches[0]) {
+                if (!card) return;
+                if (isMobileViewport() && card.classList.contains('sortable-photo-item')) return;
+                if (e.touches[0]) {
                     card.classList.add('touch-lens-active');
                     card._restRect = card.getBoundingClientRect();
                     applyCardTiltAndLens(card, e.touches[0].clientX, e.touches[0].clientY);
@@ -1127,7 +1232,9 @@
             document.addEventListener('touchmove', (e) => {
                 if (isEditMode) return;
                 const card = e.target.closest('.steam-card');
-                if (card && e.touches[0]) {
+                if (!card) return;
+                if (isMobileViewport() && card.classList.contains('sortable-photo-item')) return;
+                if (e.touches[0]) {
                     applyCardTiltAndLens(card, e.touches[0].clientX, e.touches[0].clientY);
                 }
             }, { passive: true });
@@ -1141,7 +1248,106 @@
         }
 
         /* ==========================================================================
-           2. КИНЕМАТИЧЕСКИЙ ЛАМЕЛЬНЫЙ ЗАТВОР FUJIFILM X-T4 + ЭФФЕКТ ПИКСЕЛИЗАЦИИ
+           1.5. МОБИЛЬНЫЙ ПРОСМОТРЩИК (LIGHTBOX) С АВТОСКРОЛЛОМ СТРАНИЦЫ (ТОЛЬКО ТЕЛЕФОН)
+           ========================================================================== */
+        let mobileLightboxOpen = false;
+        let mobileLightboxItems = [];
+        let mobileLightboxIndex = 0;
+
+        function openMobileLightbox(cardEl) {
+            if (!isMobileViewport() || isEditMode) return;
+            const grid = cardEl.parentElement;
+            if (!grid) return;
+
+            mobileLightboxItems = [...grid.querySelectorAll('.sortable-photo-item')];
+            mobileLightboxIndex = mobileLightboxItems.indexOf(cardEl);
+            if (mobileLightboxIndex < 0) return;
+
+            mobileLightboxOpen = true;
+            updateMobileLightboxSlide(false);
+
+            const lb = document.getElementById('mobile-photo-lightbox');
+            lb.classList.add('active');
+            document.body.classList.add('mobile-lightbox-open');
+        }
+
+        function updateMobileLightboxSlide(shouldScrollPage) {
+            if (!mobileLightboxItems.length) return;
+            const item = mobileLightboxItems[mobileLightboxIndex];
+            if (!item) return;
+
+            const imgInside = item.querySelector('img');
+            const lbImg = document.getElementById('mobile-lightbox-img');
+            const counter = document.getElementById('mobile-lightbox-counter');
+
+            if (imgInside && lbImg) {
+                lbImg.src = imgInside.src;
+            }
+            if (counter) {
+                counter.textContent = `${mobileLightboxIndex + 1} / ${mobileLightboxItems.length}`;
+            }
+
+            if (shouldScrollPage) {
+                item.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        }
+
+        function stepMobileLightbox(delta) {
+            if (!mobileLightboxOpen || !mobileLightboxItems.length) return;
+            mobileLightboxIndex = (mobileLightboxIndex + delta + mobileLightboxItems.length) % mobileLightboxItems.length;
+            updateMobileLightboxSlide(true);
+        }
+
+        function closeMobileLightbox(e) {
+            if (e) e.stopPropagation();
+            if (!mobileLightboxOpen) return;
+            mobileLightboxOpen = false;
+            document.getElementById('mobile-photo-lightbox').classList.remove('active');
+            document.body.classList.remove('mobile-lightbox-open');
+        }
+
+        function handleLightboxBackdropClick(e) {
+            if (e.target.id === 'mobile-photo-lightbox' || e.target.parentElement.id === 'mobile-photo-lightbox') {
+                closeMobileLightbox(e);
+            }
+        }
+
+        function initMobileLightboxInteractions() {
+            ['portraits-sortable-grid', 'reportage-sortable-grid'].forEach(gridId => {
+                const grid = document.getElementById(gridId);
+                if (!grid) return;
+                grid.addEventListener('click', (e) => {
+                    if (!isMobileViewport() || isEditMode) return;
+                    if (e.target.closest('.delete-photo-btn') || e.target.closest('.size-toggle-btn')) return;
+                    const card = e.target.closest('.sortable-photo-item');
+                    if (card) {
+                        e.preventDefault();
+                        openMobileLightbox(card);
+                    }
+                });
+            });
+
+            // Свайп влево/вправо пальцем в открытом мобильном лайтбоксе
+            const lb = document.getElementById('mobile-photo-lightbox');
+            let touchStartX = 0, touchStartY = 0;
+            lb.addEventListener('touchstart', (e) => {
+                if (!mobileLightboxOpen || !e.touches[0]) return;
+                touchStartX = e.touches[0].clientX;
+                touchStartY = e.touches[0].clientY;
+            }, { passive: true });
+
+            lb.addEventListener('touchend', (e) => {
+                if (!mobileLightboxOpen || !e.changedTouches[0]) return;
+                const dx = e.changedTouches[0].clientX - touchStartX;
+                const dy = e.changedTouches[0].clientY - touchStartY;
+                if (Math.abs(dx) > 42 && Math.abs(dx) > Math.abs(dy)) {
+                    stepMobileLightbox(dx < 0 ? 1 : -1);
+                }
+            }, { passive: true });
+        }
+
+        /* ==========================================================================
+           2. КИНЕМАТИЧЕСКИЙ ЛАМЕЛЬНЫЙ ЗАТВОР + ПОДДЕРЖКА КНОПКИ «НАЗАД» В БРАУЗЕРЕ
            ========================================================================== */
         function renderXT4ShutterFrame(progress) {
             const vw = window.innerWidth;
@@ -1230,9 +1436,18 @@
             overlay.style.setProperty('--px-blur', `${(easedProgress * 5).toFixed(1)}px`);
         }
 
-        function switchPage(targetPage) {
+        function switchPage(targetPage, fromHistory = false) {
+            if (mobileLightboxOpen) closeMobileLightbox();
             if (isShutterAnimating || targetPage === currentPage) return;
             isShutterAnimating = true;
+
+            // Записываем переход в историю браузера, чтобы работала системная кнопка «Назад» и свайп назад на телефоне
+            if (!fromHistory) {
+                const newHash = targetPage === 'home' ? window.location.pathname + window.location.search : `#${targetPage}`;
+                try {
+                    history.pushState({ page: targetPage }, '', newHash);
+                } catch (_) {}
+            }
 
             const viewport = document.getElementById('app-viewport');
             const shutterEl = document.getElementById('lamellar-shutter');
@@ -1312,8 +1527,39 @@
             requestAnimationFrame(() => window.remeasureTiltRects && window.remeasureTiltRects());
         }
 
+        function initBrowserHistoryNavigation() {
+            const getPageFromHash = () => {
+                const h = window.location.hash.replace('#', '');
+                return (h === 'portraits' || h === 'reportage') ? h : 'home';
+            };
+
+            const initialPage = getPageFromHash();
+            try {
+                history.replaceState({ page: initialPage }, '', window.location.href);
+            } catch (_) {}
+
+            if (initialPage !== 'home') {
+                applyPageVisibility(initialPage);
+            }
+
+            window.addEventListener('popstate', (e) => {
+                if (mobileLightboxOpen) {
+                    closeMobileLightbox();
+                }
+                const targetPage = (e.state && e.state.page) ? e.state.page : getPageFromHash();
+                if (targetPage !== currentPage) {
+                    if (isShutterAnimating) {
+                        isShutterAnimating = false;
+                        document.getElementById('lamellar-shutter').classList.remove('active');
+                        setShutterPixelProgress(0);
+                    }
+                    switchPage(targetPage, true);
+                }
+            });
+        }
+
         /* ==========================================================================
-           3. ГАЛЕРЕЯ С ЖУРНАЛЬНОЙ ЭСТЕТИКОЙ (И НА ПК, И НА СМАРТФОНАХ 12 КОЛОНОК)
+           3. ГАЛЕРЕЯ С ЖУРНАЛЬНОЙ ЭСТЕТИКОЙ
            ========================================================================== */
         const SPAN_LABELS = {
             '4': '1/3',
@@ -1409,7 +1655,6 @@
                 el.dataset.colSpan = span;
                 el.style.aspectRatio = `${d.w} / ${d.h}`;
                 el.style.maxHeight = span === '12' ? '74vh' : (ratio < 0.85 ? '70vh' : '74vh');
-                // col-span-${span} работает и на телефоне, и на ПК, сохраняя кадрирование и пропорции (по 2-3 карточки в ряд)
                 el.className = `sortable-photo-item steam-card meta-box w-full mx-auto col-span-${span}` + (plan.offset ? ' mt-3 sm:mt-8 md:mt-10' : '');
 
                 el.innerHTML = `
@@ -1473,7 +1718,6 @@
         let isEditMode = new URLSearchParams(window.location.search).get('edit') === '1';
         let draggedElement = null;
         let deletedHistory = [];
-        // Ключ v4 гарантирует, что новые координаты meCrop (-77%, 9%, 1.74) применятся сразу без старого кэша
         const SITE_CONFIG_KEY = 'ratnejal-site-config-v4';
 
         function getSiteConfig() {
@@ -1685,7 +1929,6 @@
                 });
             });
 
-            // Вход/выход в режим конструктора на MacBook по Shift + Option + E (используем e.code === 'KeyE', чтобы работало на любой раскладке)
             window.addEventListener('keydown', (e) => {
                 if (e.shiftKey && e.altKey && e.code === 'KeyE') {
                     e.preventDefault();
@@ -1747,6 +1990,8 @@
             populateCardGrid6x3('card-portraits', PORTRAITS_THUMBS);
             populateCardGrid6x3('card-reportage', DOCUMENTAL_THUMBS);
             initSteamCards();
+            initMobileLightboxInteractions();
+            initBrowserHistoryNavigation();
             initSortableGalleries();
             initTouchSort();
             if (window.remeasureTiltRects) window.remeasureTiltRects();
