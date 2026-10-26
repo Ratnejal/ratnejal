@@ -3,7 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
-    <title>женя — фотограф из звенигорода | ratnejal.ru</title>
+    <title>ratnejal</title>
+    <meta property="og:title" content="ratnejal">
+    <meta property="og:site_name" content="ratnejal">
+    <meta name="apple-mobile-web-app-title" content="ratnejal">
+    <!-- Пиксельное SVG-лого (иконка видоискателя камеры) для вкладки браузера и превью ссылок -->
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' shape-rendering='crispEdges'%3E%3Crect width='16' height='16' fill='%23FFFFFF'/%3E%3Cpath fill='%23111111' d='M1,1h4v1h-3v3h-1ZM11,1h4v4h-1v-3h-3ZM1,11h1v3h3v1h-4ZM14,11h1v4h-4v-1h3ZM5,4h6v1h-6ZM4,5h1v6h-1ZM11,5h1v6h-1ZM5,11h6v1h-6ZM7,7h2v2h-2Z'/%3E%3C/svg%3E">
+    <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' shape-rendering='crispEdges'%3E%3Crect width='16' height='16' fill='%23FFFFFF'/%3E%3Cpath fill='%23111111' d='M1,1h4v1h-3v3h-1ZM11,1h4v4h-1v-3h-3ZM1,11h1v3h3v1h-4ZM14,11h1v4h-4v-1h3ZM5,4h6v1h-6ZM4,5h1v6h-1ZM11,5h1v6h-1ZM5,11h6v1h-6ZM7,7h2v2h-2Z'/%3E%3C/svg%3E">
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -12,7 +18,6 @@
         :root {
             --lens-x: 50%;
             --lens-y: 50%;
-            /* Заводские координаты кадрирования автопортрета me.webp из твоего конфига */
             --me-x: -77%;
             --me-y: 9%;
             --me-scale: 1.74;
@@ -32,13 +37,11 @@
             overflow-x: hidden;
         }
 
-        /* Оригинальная плотность шрифта DotGothic16 */
         .font-dot {
             font-family: 'DotGothic16', monospace;
             letter-spacing: 0.02em;
         }
 
-        /* Пиксельная резкость для SVG-иконки Telegram */
         .pixel-crisp-svg {
             shape-rendering: crispEdges;
             image-rendering: -moz-crisp-edges;
@@ -47,16 +50,15 @@
             transform: translateZ(0);
         }
 
-        /* ==================== КОНТЕЙНЕР САЙТА И ЭФФЕКТ ПИКСЕЛИЗАЦИИ ==================== */
+        /* ==================== КОНТЕЙНЕР САЙТА И ЭФФЕКТ ПИКСЕЛИЗАЦИИ ЗАТВОРА ==================== */
         #app-viewport {
-            transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1), filter 0.25s ease;
+            transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1);
         }
 
         #app-viewport.shutter-pixel-active {
             filter: url(#shutter-pixelate-filter) contrast(1.08);
         }
 
-        /* При открытии фото на телефоне задний фон сайта пикселизируется и слегка темнеет */
         body.mobile-lightbox-open #app-viewport {
             filter: url(#mobile-lightbox-pixel-filter) brightness(0.72) contrast(1.08);
             pointer-events: none;
@@ -82,7 +84,7 @@
             opacity: 1;
         }
 
-        /* ==================== КАДРИРОВАНИЕ И ЗАКРЕПЛЕНИЕ АВТОПОРТРЕТА ME.WEBP ==================== */
+        /* ==================== КАДРИРОВАНИЕ АВТОПОРТРЕТА ME.WEBP ==================== */
         .hero-photo-col {
             position: relative;
             overflow: visible !important;
@@ -110,14 +112,12 @@
             display: block;
         }
 
-        /* При сужении окна браузера по ширине портрет плавно смещается левее */
         @media (min-width: 640px) and (max-width: 1150px) {
             #hero-me-transform-box {
                 transform: translate3d(calc(var(--me-x) - 6%), var(--me-y), 0) scale(1.62);
             }
         }
 
-        /* АДАПТАЦИЯ ПОД WINDOWS-НОУТБУКИ С МАСШТАБИРОВАНИЕМ 125%-150% И ЭКРАНАМИ 16:9 (НЕ ТРОГАЕТ MACBOOK PRO) */
         @media (min-width: 640px) and (max-height: 820px) {
             .hero-content-col {
                 padding-top: 2vh !important;
@@ -141,7 +141,6 @@
             }
         }
 
-        /* ==================== МОБИЛЬНАЯ КОМПОЗИЦИЯ ГЛАВНОЙ СТРАНИЦЫ (ПО ТВОЕМУ МАКЕТУ) ==================== */
         @media (max-width: 639px) {
             #page-home {
                 height: 100dvh;
@@ -214,7 +213,7 @@
             }
         }
 
-        /* ==================== МОБИЛЬНЫЙ ПРОСМОТРЩИК ФОТО (LIGHTBOX ТОЛЬКО НА ТЕЛЕФОНАХ) ==================== */
+        /* ==================== МОБИЛЬНЫЙ ПРОСМОТРЩИК (LIGHTBOX) ==================== */
         #mobile-photo-lightbox {
             position: fixed;
             inset: 0;
@@ -321,7 +320,7 @@
             transition: transform 0.35s cubic-bezier(0.77, 0, 0.175, 1);
         }
 
-        /* ==================== МЕТА-ЗАПОЛНИТЕЛИ И КАРТОЧКИ STEAM ==================== */
+        /* ==================== КАРТОЧКИ STEAM И МЕТА-БОКСЫ ==================== */
         .meta-box {
             position: relative;
             background-color: #F4F4F2;
@@ -503,7 +502,7 @@
     <!-- РЕЗЕРВНЫЙ КЛАССИЧЕСКИЙ ЗАТВОР -->
     <div id="classic-shutter-backup"></div>
 
-    <!-- МОБИЛЬНЫЙ ПРОСМОТРЩИК ФОТО (ОТКРЫВАЕТСЯ ТОЛЬКО НА СМАРТФОНАХ ПРИ КЛИКЕ НА КАДР) -->
+    <!-- МОБИЛЬНЫЙ ПРОСМОТРЩИК ФОТО (LIGHTBOX ТОЛЬКО НА ТЕЛЕФОНАХ) -->
     <div id="mobile-photo-lightbox" onclick="handleLightboxBackdropClick(event)">
         <button onclick="closeMobileLightbox(event)" class="fixed top-4 right-4 z-50 bg-white/90 text-[#111] font-dot text-sm px-3.5 py-1.5 border border-black/30 shadow-md active:scale-95 transition-transform">
             ✕ закрыть
@@ -686,7 +685,7 @@
         <span>@ratnejal</span>
     </a>
 
-    <!-- SVG-ФИЛЬТРЫ ДИСКРЕТИЗАЦИИ ДЛЯ ПЕРЕХОДА ЗАТВОРА И МОБИЛЬНОГО ЛАЙТБОКСА -->
+    <!-- ВОССТАНОВЛЕННЫЙ SVG-ФИЛЬТР ДИСКРЕТИЗАЦИИ (ПИКСЕЛИЗАЦИЯ ЭКРАНА ПРИ ХОДЕ ЗАТВОРА) -->
     <svg width="0" height="0" style="position:absolute;pointer-events:none;" aria-hidden="true">
         <defs>
             <filter id="shutter-pixelate-filter" x="0%" y="0%" width="100%" height="100%" color-interpolation-filters="sRGB">
@@ -904,10 +903,10 @@
             'documental_DSCF4626E'
         ];
 
-        const PHOTO_DIMS = {"me":{"w":3724,"h":5586},"pixel_DSCF9900":{"w":6240,"h":4160},"portreit_DSCF0022":{"w":6240,"h":4160},"portreit_DSCF2273":{"w":4091,"h":6137},"portreit_DSCF2279":{"w":4072,"h":4072},"portreit_DSCF2291":{"w":3807,"h":5710},"portreit_DSCF2292":{"w":4018,"h":6027},"portreit_DSCF2296":{"w":4160,"h":6240},"portreit_DSCF2321":{"w":3808,"h":5712},"portreit_DSCF2337":{"w":4160,"h":6240},"portreit_DSCF2346":{"w":4160,"h":6240},"portreit_DSCF2349":{"w":6240,"h":4160},"portreit_DSCF3937E":{"w":4160,"h":6240},"portreit_DSCF3965E":{"w":4160,"h":6240},"portreit_DSCF3973E":{"w":3576,"h":5364},"portreit_DSCF3982E":{"w":4101,"h":6152},"portreit_DSCF3985E2":{"w":4160,"h":6240},"portreit_DSCF3987E2":{"w":4160,"h":6240},"portreit_DSCF4009E2":{"w":4045,"h":6067},"portreit_DSCF4014E2":{"w":4160,"h":6240},"portreit_DSCF4017E2":{"w":4068,"h":6103},"portreit_DSCF4021E2":{"w":4004,"h":6006},"portreit_DSCF4027E2":{"w":3773,"h":5659},"portreit_DSCF4033E2":{"w":3809,"h":5713},"portreit_DSCF4036E2":{"w":4095,"h":6143},"portreit_DSCF4038E2":{"w":4155,"h":6232},"portreit_DSCF4042E2":{"w":4122,"h":6182},"portreit_DSCF4043E2":{"w":4160,"h":6240},"portreit_DSCF6799":{"w":4160,"h":6240},"portreit_DSCF6804":{"w":6127,"h":4085},"portreit_DSCF6827":{"w":4087,"h":6131},"portreit_DSCF6841":{"w":6240,"h":4160},"portreit_DSCF6852":{"w":4160,"h":6240},"portreit_DSCF6856":{"w":4160,"h":6240},"portreit_DSCF6858":{"w":4025,"h":6038},"portreit_DSCF6859":{"w":3940,"h":5910},"portreit_DSCF6896":{"w":6240,"h":4160},"portreit_DSCF6942":{"w":6240,"h":4160},"portreit_DSCF6949":{"w":6240,"h":4160},"portreit_DSCF8501e":{"w":6240,"h":4160},"portreit_DSCF8511e":{"w":1465,"h":2198},"portreit_DSCF8533e":{"w":4160,"h":6240},"portreit_DSCF8541e":{"w":6240,"h":4160},"portreit_DSCF8553e":{"w":2370,"h":3555},"portreit_DSCF9288":{"w":6240,"h":4160},"portreit_DSCF9320":{"w":6240,"h":4160},"portreit_DSCF9350":{"w":6240,"h":4160},"portreit_DSCF9369":{"w":6240,"h":4160},"portreit_DSCF9407":{"w":6240,"h":4160},"portreit_DSCF9454":{"w":6145,"h":4097},"portreit_DSCF9458":{"w":6181,"h":4121},"portreit_DSCF9471":{"w":6240,"h":4160},"portreit_DSCF9485":{"w":4160,"h":6240},"portreit_DSCF9561":{"w":6240,"h":4160},"portreit_DSCF9576":{"w":3299,"h":4948},"portreit_DSCF9597":{"w":4160,"h":6240},"portreit_DSCF9614":{"w":6240,"h":4160},"portreit_DSCF9624":{"w":6240,"h":4160},"portreit_DSCF9633":{"w":6240,"h":4160},"portreit_DSCF9669":{"w":3753,"h":5629},"portreit_DSCF9676":{"w":6240,"h":4160},"portreit_DSCF9685":{"w":6240,"h":4160},"portreit_DSCF9705":{"w":6240,"h":4160},"portreit_DSCF9723":{"w":4160,"h":6240},"portreit_DSCF9747":{"w":4160,"h":6240},"portreit_DSCF9768":{"w":6240,"h":4160},"portreit_DSCF9788":{"w":6240,"h":4160},"portreit_DSCF9816":{"w":6240,"h":4160},"portreit_DSCF9821":{"w":3743,"h":5615},"portreit_DSCF9822":{"w":4160,"h":6240},"portreit_DSCF9857":{"w":6240,"h":4160},"portreit_DSCF9884":{"w":6240,"h":4160},"portreit_DSCF9889":{"w":6240,"h":4160},"portreit_DSCF9890":{"w":6240,"h":4160},"portreit_DSCF9909":{"w":3612,"h":5418},"portreit_DSCF9920":{"w":6240,"h":4160},"portreit_DSCF9935":{"w":4160,"h":6240},"portreit_DSCF9966":{"w":6240,"h":4160},"portreit_DSCF9984":{"w":3686,"h":2458},"portreit_DSCF9985":{"w":4160,"h":6240},"portreit_DSCF9988":{"w":4160,"h":6240},"portreit_DSCF9989":{"w":6240,"h":4160},"portreit_INST_DSCF2758":{"w":2560,"h":1707},"portreit_INST_DSCF2768":{"w":2560,"h":1707},"portreit_INST_DSCF2782":{"w":1707,"h":2560},"portreit_INST_DSCF2797":{"w":2560,"h":1707},"portreit_INST_DSCF2819":{"w":2560,"h":2560},"portreit_INST_DSCF2835":{"w":1707,"h":2560},"portreit_INST_DSCF2842":{"w":1707,"h":2560},"portreit_INST_DSCF2844":{"w":2560,"h":1707},"portreit_INST_DSCF2846":{"w":2560,"h":1707},"portreit_INST_DSCF2874":{"w":2560,"h":1707},"portreit_INST_DSCF2885":{"w":1707,"h":2560},"portreit_INST_DSCF2894":{"w":2560,"h":1707},"portreit_INST_DSCF2896":{"w":2560,"h":1707},"portreit_INST_DSCF2911":{"w":2560,"h":1707},"portreit_INST_DSCF2912":{"w":2560,"h":1707},"portreit_INST_DSCF2916":{"w":2560,"h":1707},"portreit_INST_DSCF2920":{"w":1707,"h":2560},"portreit_INST_DSCF2936":{"w":2560,"h":1707},"portreit_INST_DSCF2976":{"w":2560,"h":1707},"portreit_INST_DSCF3044":{"w":1707,"h":2560},"portreit_INST_DSCF3051":{"w":2560,"h":1707},"portreit_INST_DSCF3054":{"w":1707,"h":2560},"portreit_INST_DSCF3062":{"w":1707,"h":2560},"portreit_INST_DSCF3080":{"w":2560,"h":1707},"portreit_INST_DSCF3102":{"w":2560,"h":1707},"portreit_INST_DSCF3107":{"w":1707,"h":2560},"portreit_INST_DSCF3109":{"w":1707,"h":2560},"portreit_INST_DSCF3144":{"w":1707,"h":2560},"portreit_INST_DSCF3155":{"w":1707,"h":2560},"portreit_INST_DSCF3174":{"w":1707,"h":2560},"portreit_INST_DSCF3182":{"w":2560,"h":1707},"portreit_INST_DSCF3223":{"w":1707,"h":2560},"portreit_INST_DSCF3261":{"w":2560,"h":1707},"portreit_INST_DSCF3270":{"w":2560,"h":1707},"portreit_INST_DSCF3271":{"w":2560,"h":1707},"portreit_INST_DSCF3276":{"w":1707,"h":2560},"portreit_INST_DSCF3278":{"w":2560,"h":1707},"portreit_INST_DSCF3295":{"w":1707,"h":2560},"portreit_INST_DSCF3299":{"w":1707,"h":2560},"portreit_INST_DSCF3310":{"w":2560,"h":1707},"portreit_INST_DSCF3367":{"w":2560,"h":1707},"portreit_INST_DSCF3378":{"w":1707,"h":2560},"portreit_INST_DSCF3379":{"w":1707,"h":2560},"portreit_Ретушь DSCF3916E2":{"w":4619,"h":3079},"portreit_asciikit-2026-05-10T19-00-39":{"w":3240,"h":2160},"documental_DSCF0127":{"w":6240,"h":4160},"documental_DSCF0159":{"w":4160,"h":6240},"documental_DSCF0167":{"w":6240,"h":4160},"documental_DSCF0277":{"w":6240,"h":4160},"documental_DSCF0289":{"w":6240,"h":4160},"documental_DSCF0294":{"w":3480,"h":5220},"documental_DSCF0295":{"w":3499,"h":5248},"documental_DSCF0527":{"w":1954,"h":1303},"documental_DSCF0571":{"w":3428,"h":2286},"documental_DSCF0573":{"w":2303,"h":3455},"documental_DSCF0583":{"w":1808,"h":1205},"documental_DSCF0613":{"w":1869,"h":1246},"documental_DSCF0672":{"w":3851,"h":2568},"documental_DSCF0810":{"w":4312,"h":2875},"documental_DSCF0878":{"w":5510,"h":3674},"documental_DSCF1133":{"w":6240,"h":4160},"documental_DSCF1180":{"w":3624,"h":5436},"documental_DSCF1218":{"w":3872,"h":5807},"documental_DSCF1229":{"w":4010,"h":2674},"documental_DSCF1250":{"w":3907,"h":2605},"documental_DSCF1854":{"w":1714,"h":2571},"documental_DSCF1870":{"w":2745,"h":1830},"documental_DSCF1889":{"w":4160,"h":6240},"documental_DSCF1893":{"w":5895,"h":3930},"documental_DSCF1911":{"w":3999,"h":5999},"documental_DSCF1914":{"w":6240,"h":4160},"documental_DSCF1917":{"w":4160,"h":6240},"documental_DSCF1923":{"w":6240,"h":4160},"documental_DSCF1934":{"w":6240,"h":4160},"documental_DSCF1942":{"w":4160,"h":6240},"documental_DSCF1946":{"w":4160,"h":6240},"documental_DSCF3708E":{"w":4160,"h":6240},"documental_DSCF3715E":{"w":6240,"h":4160},"documental_DSCF3720E":{"w":6240,"h":4160},"documental_DSCF3725E":{"w":4160,"h":6240},"documental_DSCF3729E":{"w":4160,"h":6240},"documental_DSCF3756E":{"w":4160,"h":6240},"documental_DSCF3765E":{"w":4061,"h":2707},"documental_DSCF3772E":{"w":6240,"h":4160},"documental_DSCF3776E":{"w":4160,"h":6240},"documental_DSCF3779E":{"w":6240,"h":4160},"documental_DSCF3780E":{"w":6240,"h":4160},"documental_DSCF3782E":{"w":6240,"h":4160},"documental_DSCF3811E":{"w":2554,"h":3831},"documental_DSCF3817E":{"w":4160,"h":6240},"documental_DSCF3855E":{"w":4160,"h":6240},"documental_DSCF3863E":{"w":3231,"h":4846},"documental_DSCF3897E":{"w":1643,"h":2464},"documental_DSCF4464E":{"w":5973,"h":3982},"documental_DSCF4484E":{"w":4160,"h":6240},"documental_DSCF4495E":{"w":5949,"h":3966},"documental_DSCF4513E":{"w":1567,"h":2350},"documental_DSCF4523E":{"w":4160,"h":6240},"documental_DSCF4567E":{"w":3197,"h":4796},"documental_DSCF4579E":{"w":2213,"h":3319},"documental_DSCF4584E":{"w":5668,"h":3779},"documental_DSCF4626E":{"w":6240,"h":4160}};
+        const PHOTO_DIMS = {"me":{"w":3724,"h":5586},"pixel_DSCF9900":{"w":6240,"h":4160},"portreit_DSCF0022":{"w":6240,"h":4160},"portreit_DSCF2273":{"w":4091,"h":6137},"portreit_DSCF2279":{"w":4072,"h":4072},"portreit_DSCF2291":{"w":3807,"h":5710},"portreit_DSCF2292":{"w":4018,"h":6027},"portreit_DSCF2296":{"w":4160,"h":6240},"portreit_DSCF2321":{"w":3808,"h":5712},"portreit_DSCF2337":{"w":4160,"h":6240},"portreit_DSCF2346":{"w":4160,"h":6240},"portreit_DSCF2349":{"w":6240,"h":4160},"portreit_DSCF3937E":{"w":4160,"h":6240},"portreit_DSCF3965E":{"w":4160,"h":6240},"portreit_DSCF3973E":{"w":3576,"h":5364},"portreit_DSCF3982E":{"w":4101,"h":6152},"portreit_DSCF3985E2":{"w":4160,"h":6240},"portreit_DSCF3987E2":{"w":4160,"h":6240},"portreit_DSCF4009E2":{"w":4045,"h":6067},"portreit_DSCF4014E2":{"w":4160,"h":6240},"portreit_DSCF4017E2":{"w":4068,"h":6103},"portreit_DSCF4021E2":{"w":4004,"h":6006},"portreit_DSCF4027E2":{"w":3773,"h":5659},"portreit_DSCF4033E2":{"w":3809,"h":5713},"portreit_DSCF4036E2":{"w":4095,"h":6143},"portreit_DSCF4038E2":{"w":4155,"h":6232},"portreit_DSCF4042E2":{"w":4122,"h":6182},"portreit_DSCF4043E2":{"w":4160,"h":6240},"portreit_DSCF6799":{"w":4160,"h":6240},"portreit_DSCF6804":{"w":6127,"h":4085},"portreit_DSCF6827":{"w":4087,"h":6131},"portreit_DSCF6841":{"w":6240,"h":4160},"portreit_DSCF6852":{"w":4160,"h":6240},"portreit_DSCF6856":{"w":4160,"h":6240},"portreit_DSCF6858":{"w":4025,"h":6038},"portreit_DSCF6859":{"w":3940,"h":5910},"portreit_DSCF6896":{"w":6240,"h":4160},"portreit_DSCF6942":{"w":6240,"h":4160},"portreit_DSCF6949":{"w":6240,"h":4160},"portreit_DSCF8501e":{"w":6240,"h":4160},"portreit_DSCF8511e":{"w":1465,"h":2198},"portreit_DSCF8533e":{"w":4160,"h":6240},"portreit_DSCF8541e":{"w":6240,"h":4160},"portreit_DSCF8553e":{"w":2370,"h":3555},"portreit_DSCF9288":{"w":6240,"h":4160},"portreit_DSCF9320":{"w":6240,"h":4160},"portreit_DSCF9350":{"w":6240,"h":4160},"portreit_DSCF9369":{"w":6240,"h":4160},"portreit_DSCF9407":{"w":6240,"h":4160},"portreit_DSCF9454":{"w":6145,"h":4097},"portreit_DSCF9458":{"w":6181,"h":4121},"portreit_DSCF9471":{"w":6240,"h":4160},"portreit_DSCF9485":{"w":4160,"h":6240},"portreit_DSCF9561":{"w":6240,"h":4160},"portreit_DSCF9576":{"w":3299,"h":4948},"portreit_DSCF9597":{"w":4160,"h":6240},"portreit_DSCF9614":{"w":6240,"h":4160},"portreit_DSCF9624":{"w":6240,"h":4160},"portreit_DSCF9633":{"w":6240,"h":4160},"portreit_DSCF9669":{"w":3753,"h":5629},"portreit_DSCF9676":{"w":6240,"h":4160},"portreit_DSCF9685":{"w":6240,"h":4160},"portreit_DSCF9705":{"w":6240,"h":4160},"portreit_DSCF9723":{"w":4160,"h":6240},"portreit_DSCF9747":{"w":4160,"h":6240},"portreit_DSCF9768":{"w":6240,"h":4160},"portreit_DSCF9788":{"w":6240,"h":4160},"portreit_DSCF9816":{"w":6240,"h":4160},"portreit_DSCF9821":{"w":3743,"h":5615},"portreit_DSCF9822":{"w":4160,"h":6240},"portreit_DSCF9857":{"w":6240,"h":4160},"portreit_DSCF9884":{"w":6240,"h":4160},"portreit_DSCF9889":{"w":6240,"h":4160},"portreit_DSCF9890":{"w":6240,"h":4160},"portreit_DSCF9909":{"w":3612,"h":5418},"portreit_DSCF9920":{"w":6240,"h":4160},"portreit_DSCF9935":{"w":4160,"h":6240},"portreit_DSCF9966":{"w":6240,"h":4160},"portreit_DSCF9984":{"w":3686,"h":2458},"portreit_DSCF9985":{"w":4160,"h":6240},"portreit_DSCF9988":{"w":4160,"h":6240},"portreit_DSCF9989":{"w":6240,"h":4160},"portreit_INST_DSCF2758":{"w":2560,"h":1707},"portreit_INST_DSCF2768":{"w":2560,"h":1707},"portreit_INST_DSCF2782":{"w":1707,"h":2560},"portreit_INST_DSCF2797":{"w":2560,"h":1707},"portreit_INST_DSCF2819":{"w":2560,"h":2560},"portreit_INST_DSCF2835":{"w":1707,"h":2560},"portreit_INST_DSCF2842":{"w":1707,"h":2560},"portreit_INST_DSCF2844":{"w":2560,"h":1707},"portreit_INST_DSCF2846":{"w":2560,"h":1707},"portreit_INST_DSCF2874":{"w":2560,"h":1707},"portreit_INST_DSCF2885":{"w":1707,"h":2560},"portreit_INST_DSCF2894":{"w":2560,"h":1707},"portreit_INST_DSCF2896":{"w":2560,"h":1707},"portreit_INST_DSCF2911":{"w":2560,"h":1707},"portreit_INST_DSCF2912":{"w":2560,"h":1707},"portreit_INST_DSCF2916":{"w":2560,"h":1707},"portreit_INST_DSCF2920":{"w":1707,"h":2560},"portreit_INST_DSCF2936":{"w":2560,"h":1707},"portreit_INST_DSCF2976":{"w":2560,"h":1707},"portreit_INST_DSCF3044":{"w":1707,"h":2560},"portreit_INST_DSCF3051":{"w":2560,"h":1707},"portreit_INST_DSCF3054":{"w":1707,"h":2560},"portreit_INST_DSCF3062":{"w":1707,"h":2560},"portreit_INST_DSCF3080":{"w":2560,"h":1707},"portreit_INST_DSCF3102":{"w":2560,"h":1707},"portreit_INST_DSCF3107":{"w":1707,"h":2560},"portreit_INST_DSCF3109":{"w":1707,"h":2560},"portreit_INST_DSCF3144":{"w":1707,"h":2560},"portreit_INST_DSCF3155":{"w":1707,"h":2560},"portreit_INST_DSCF3174":{"w":1707,"h":2560},"portreit_INST_DSCF3182":{"w":2560,"h":1707},"portreit_INST_DSCF3223":{"w":1707,"h":2560},"portreit_INST_DSCF3261":{"w":2560,"h":1707},"portreit_INST_DSCF3270":{"w":2560,"h":1707},"portreit_INST_DSCF3271":{"w":2560,"h":1707},"portreit_INST_DSCF3276":{"w":1707,"h":2560},"portreit_INST_DSCF3278":{"w":2560,"h":1707},"portreit_INST_DSCF3295":{"w":1707,"h":2560},"portreit_INST_DSCF3299":{"w":1707,"h":2560},"portreit_INST_DSCF3310":{"w":2560,"h":1707},"portreit_INST_DSCF3367":{"w":2560,"h":1707},"portreit_INST_DSCF3378":{"w":1707,"h":2560},"portreit_INST_DSCF3379":{"w":1707,"h":2560},"portreit_Ретушь DSCF3916E2":{"w":4619,"h":3079},"portreit_asciikit-2026-05-10T19-00-39":{"w":3240,"h":2160},"documental_DSCF0127":{"w":6240,"h":4160},"documental_DSCF0159":{"w":4160,"h":6240},"documental_DSCF0167":{"w":6240,"h":4160},"documental_DSCF0277":{"w":6240,"h":4160},"documental_DSCF0289":{"w":6240,"h":4160},"documental_DSCF0294":{"w":3480,"h":5220},"documental_DSCF0295":{"w":3499,"h":5248},"documental_DSCF0527":{"w":1954,"h":1303},"documental_DSCF0571":{"w":3428,"h":2286},"documental_DSCF0573":{"w":2303,"h":3455},"documental_DSCF0583":{"w":1808,"h":1205},"documental_DSCF0613":{"w":1869,"h":1246},"documental_DSCF0672":{"w":3851,"h":2568},"documental_DSCF0810":{"w":4312,"h":2875},"documental_DSCF0878":{"w":5510,"h":3674},"documental_DSCF1133":{"w":6240,"h":4160},"documental_DSCF1180":{"w":3624,"h":5436},"documental_DSCF1218":{"w":3872,"h":5807},"documental_DSCF1229":{"w":4010,"h":2674},"documental_DSCF1250":{"w":3907,"h":2605},"documental_DSCF1854":{"w":1714,"h":2571},"documental_DSCF1870":{"w":2745,"h":1830},"documental_DSCF1889":{"w":4160,"h":6240},"documental_DSCF1893":{"w":5895,"h":3930},"documental_DSCF1911":{"w":3999,"h":5999},"documental_DSCF1914":{"w":6240,"h":4160},"documental_DSCF1917":{"w":4160,"h":6240},"documental_DSCF1923":{"w":6240,"h":4160},"documental_DSCF1934":{"w":6240,"h":4160},"documental_DSCF1942":{"w":4160,"h":6240},"documental_DSCF1946":{"w":4160,"h":6240},"documental_DSCF3708E":{"w":4160,"h":6240},"documental_DSCF3715E":{"w":6240,"h":4160},"documental_DSCF3720E":{"w":6240,"h":4160},"documental_DSCF3725E":{"w":6240,"h":4160},"documental_DSCF3729E":{"w":6240,"h":4160},"documental_DSCF3756E":{"w":6240,"h":4160},"documental_DSCF3765E":{"w":4061,"h":2707},"documental_DSCF3772E":{"w":6240,"h":4160},"documental_DSCF3776E":{"w":4160,"h":6240},"documental_DSCF3779E":{"w":4160,"h":6240},"documental_DSCF3800E":{"w":4160,"h":6240},"documental_DSCF3811E":{"w":2554,"h":3831},"documental_DSCF3817E":{"w":4160,"h":6240},"documental_DSCF3855E":{"w":4160,"h":6240},"documental_DSCF3863E":{"w":3231,"h":4846},"documental_DSCF3897E":{"w":1643,"h":2464},"documental_DSCF4464E":{"w":5973,"h":3982},"documental_DSCF4484E":{"w":4160,"h":6240},"documental_DSCF4495E":{"w":6240,"h":4160},"documental_DSCF4513E":{"w":1567,"h":2350},"documental_DSCF4523E":{"w":4160,"h":6240},"documental_DSCF4567E":{"w":3197,"h":4796},"documental_DSCF4579E":{"w":2213,"h":3319},"documental_DSCF4584E":{"w":5668,"h":3779},"documental_DSCF4626E":{"w":6240,"h":4160}};
 
         /* ==========================================================================
-           ЗАВОДСКАЯ КОНФИГУРАЦИЯ
+           ЗАВОДСКАЯ КОНФИГУРАЦИЯ (С ТВОИМ НОВЫМ ПОРЯДКОМ РЕПОРТАЖА)
            ========================================================================== */
         const SAVED_SITE_CONFIG = {
             "meCrop": {
@@ -1028,22 +1027,22 @@
                 { "id": "portreit_DSCF9747", "colSpan": "6" }
             ],
             "reportage": [
-                { "id": "documental_DSCF1946", "colSpan": "4" },
-                { "id": "documental_DSCF3897E", "colSpan": "5" },
-                { "id": "documental_DSCF0289", "colSpan": "8" },
-                { "id": "documental_DSCF4513E", "colSpan": "4" },
                 { "id": "documental_DSCF0613", "colSpan": "7" },
-                { "id": "documental_DSCF0573", "colSpan": "5" },
-                { "id": "documental_DSCF0295", "colSpan": "4" },
+                { "id": "documental_DSCF3897E", "colSpan": "5" },
+                { "id": "documental_DSCF1946", "colSpan": "4" },
+                { "id": "documental_DSCF0289", "colSpan": "8" },
                 { "id": "documental_DSCF4579E", "colSpan": "7" },
-                { "id": "documental_DSCF0571", "colSpan": "6" },
+                { "id": "documental_DSCF0295", "colSpan": "4" },
                 { "id": "documental_DSCF1917", "colSpan": "4" },
+                { "id": "documental_DSCF0571", "colSpan": "6" },
                 { "id": "documental_DSCF1870", "colSpan": "12" },
-                { "id": "documental_DSCF0527", "colSpan": "5" },
+                { "id": "documental_DSCF4513E", "colSpan": "4" },
+                { "id": "documental_DSCF0573", "colSpan": "5" },
                 { "id": "documental_DSCF0810", "colSpan": "6" },
                 { "id": "documental_DSCF1923", "colSpan": "6" },
                 { "id": "documental_DSCF1250", "colSpan": "4" },
                 { "id": "documental_DSCF0159", "colSpan": "5" },
+                { "id": "documental_DSCF0527", "colSpan": "5" },
                 { "id": "documental_DSCF1133", "colSpan": "7" },
                 { "id": "documental_DSCF0583", "colSpan": "7" },
                 { "id": "documental_DSCF3729E", "colSpan": "4" },
@@ -1108,7 +1107,7 @@
         }
 
         /* ==========================================================================
-           1. ЭФФЕКТ КАРТОЧЕК STEAM + СФЕРА РАЗБЛЮРА (НА МОБИЛЬНЫХ ОТКЛЮЧЕН ДЛЯ ГАЛЕРЕЙ)
+           1. ЭФФЕКТ КАРТОЧЕК STEAM + СФЕРА РАЗБЛЮРА
            ========================================================================== */
         function applyCardTiltAndLens(card, clientX, clientY) {
             const glare = card.querySelector('.steam-glare');
@@ -1216,7 +1215,6 @@
             window.addEventListener('scroll', remeasureRestRects, { passive: true });
             window.remeasureTiltRects = remeasureRestRects;
 
-            // На смартфонах оставляем 3D-наклон и линзу только на 2 карточках главной страницы, а в галереях работает увеличение
             document.addEventListener('touchstart', (e) => {
                 if (isEditMode) return;
                 const card = e.target.closest('.steam-card');
@@ -1248,7 +1246,7 @@
         }
 
         /* ==========================================================================
-           1.5. МОБИЛЬНЫЙ ПРОСМОТРЩИК (LIGHTBOX) С АВТОСКРОЛЛОМ СТРАНИЦЫ (ТОЛЬКО ТЕЛЕФОН)
+           1.5. МОБИЛЬНЫЙ ПРОСМОТРЩИК (LIGHTBOX)
            ========================================================================== */
         let mobileLightboxOpen = false;
         let mobileLightboxItems = [];
@@ -1327,7 +1325,6 @@
                 });
             });
 
-            // Свайп влево/вправо пальцем в открытом мобильном лайтбоксе
             const lb = document.getElementById('mobile-photo-lightbox');
             let touchStartX = 0, touchStartY = 0;
             lb.addEventListener('touchstart', (e) => {
@@ -1347,7 +1344,7 @@
         }
 
         /* ==========================================================================
-           2. КИНЕМАТИЧЕСКИЙ ЛАМЕЛЬНЫЙ ЗАТВОР + ПОДДЕРЖКА КНОПКИ «НАЗАД» В БРАУЗЕРЕ
+           2. ЛАМЕЛЬНЫЙ ЗАТВОР + СТУПЕНЧАТАЯ ПИКСЕЛИЗАЦИЯ ЭКРАНА
            ========================================================================== */
         function renderXT4ShutterFrame(progress) {
             const vw = window.innerWidth;
@@ -1441,7 +1438,6 @@
             if (isShutterAnimating || targetPage === currentPage) return;
             isShutterAnimating = true;
 
-            // Записываем переход в историю браузера, чтобы работала системная кнопка «Назад» и свайп назад на телефоне
             if (!fromHistory) {
                 const newHash = targetPage === 'home' ? window.location.pathname + window.location.search : `#${targetPage}`;
                 try {
@@ -1469,9 +1465,9 @@
             }
 
             shutterEl.classList.add('active');
-            const closeDuration = 300;
-            const holdDuration = 95;
-            const openDuration = 340;
+            const closeDuration = 280;
+            const holdDuration = 85;
+            const openDuration = 310;
             const startTime = performance.now();
 
             function animateClose(now) {
@@ -1559,7 +1555,7 @@
         }
 
         /* ==========================================================================
-           3. ГАЛЕРЕЯ С ЖУРНАЛЬНОЙ ЭСТЕТИКОЙ
+           3. ЖУРНАЛЬНАЯ СЕТКА И УМНОЕ ВЫРАВНИВАНИЕ РЯДОВ
            ========================================================================== */
         const SPAN_LABELS = {
             '4': '1/3',
@@ -1665,6 +1661,60 @@
                 `;
                 grid.appendChild(el);
             });
+
+            applyEditorialRowPolish(gridId);
+        }
+
+        /* Умное выравнивание: одиночные карточки в ряду сдвигаются к центру/правее, чтобы не было пустой дыры справа */
+        function applyEditorialRowPolish(gridId) {
+            const grid = document.getElementById(gridId);
+            if (!grid) return;
+            const items = [...grid.querySelectorAll('.sortable-photo-item')];
+
+            const positioningClasses = [
+                'col-start-1', 'col-start-2', 'col-start-3', 'col-start-4', 'col-start-5',
+                'col-end-13'
+            ];
+
+            items.forEach(el => el.classList.remove(...positioningClasses));
+
+            let currentRow = [];
+            let currentSum = 0;
+            let rowNumber = 0;
+
+            const flushRow = (row, sum, rIdx) => {
+                if (!row.length) return;
+
+                if (row.length === 1) {
+                    const onlyCard = row[0];
+                    const span = parseInt(onlyCard.dataset.colSpan || '6', 10);
+                    if (span < 12) {
+                        const freeCols = 12 - span;
+                        const startCol = rIdx % 2 === 0
+                            ? Math.max(2, Math.floor(freeCols / 2) + 1)
+                            : Math.max(2, Math.min(5, freeCols));
+                        onlyCard.classList.add(`col-start-${startCol}`);
+                    }
+                } else if (row.length === 2 && sum < 12) {
+                    const secondCard = row[1];
+                    secondCard.classList.add('col-end-13');
+                }
+            };
+
+            items.forEach(item => {
+                const span = parseInt(item.dataset.colSpan || '6', 10);
+                if (currentSum + span > 12) {
+                    flushRow(currentRow, currentSum, rowNumber);
+                    rowNumber += 1;
+                    currentRow = [item];
+                    currentSum = span;
+                } else {
+                    currentRow.push(item);
+                    currentSum += span;
+                }
+            });
+
+            flushRow(currentRow, currentSum, rowNumber);
         }
 
         function initTouchSort() {
@@ -1701,9 +1751,11 @@
 
             const finish = () => {
                 if (touchItem) {
+                    const parentGridId = touchItem.parentNode && touchItem.parentNode.id;
                     touchItem.classList.remove('dragging');
                     touchItem.style.touchAction = '';
                     touchItem = null;
+                    if (parentGridId) applyEditorialRowPolish(parentGridId);
                     saveSiteConfig();
                     requestAnimationFrame(() => window.remeasureTiltRects && window.remeasureTiltRects());
                 }
@@ -1713,7 +1765,7 @@
         }
 
         /* ==========================================================================
-           4. РЕЖИМ КОНСТРУКТОРА (ВЫЗОВ ПО SHIFT + OPTION + E ИЛИ ?edit=1)
+           4. РЕЖИМ КОНСТРУКТОРА
            ========================================================================== */
         let isEditMode = new URLSearchParams(window.location.search).get('edit') === '1';
         let draggedElement = null;
@@ -1773,6 +1825,7 @@
                     }
                 });
                 byId.forEach(el => el.remove());
+                applyEditorialRowPolish(id);
             });
         }
 
@@ -1793,12 +1846,14 @@
             e.stopPropagation();
             const card = button.closest('.sortable-photo-item');
             if (!card) return;
+            const gridId = card.parentElement.id;
             deletedHistory.push({
-                gridId: card.parentElement.id,
+                gridId,
                 card,
                 index: [...card.parentElement.children].indexOf(card)
             });
             card.remove();
+            applyEditorialRowPolish(gridId);
             saveSiteConfig();
             requestAnimationFrame(() => window.remeasureTiltRects && window.remeasureTiltRects());
         }
@@ -1808,6 +1863,7 @@
             if (!record) return;
             const grid = document.getElementById(record.gridId);
             grid.insertBefore(record.card, grid.children[record.index] || null);
+            applyEditorialRowPolish(record.gridId);
             saveSiteConfig();
             requestAnimationFrame(() => window.remeasureTiltRects && window.remeasureTiltRects());
         }
@@ -1831,6 +1887,7 @@
                 card.classList.toggle('md:mt-10', !!plan.offset);
                 grid.appendChild(card);
             });
+            applyEditorialRowPolish(id);
             saveSiteConfig();
             requestAnimationFrame(() => window.remeasureTiltRects && window.remeasureTiltRects());
         }
@@ -1887,6 +1944,9 @@
             const next = spans[(spans.indexOf(current) + 1) % spans.length];
 
             setItemSpan(card, next);
+            if (card.parentElement && card.parentElement.id) {
+                applyEditorialRowPolish(card.parentElement.id);
+            }
             saveSiteConfig();
             if (window.remeasureTiltRects) setTimeout(window.remeasureTiltRects, 200);
         }
@@ -1913,6 +1973,7 @@
                         draggedElement.classList.remove('dragging');
                         draggedElement = null;
                     }
+                    applyEditorialRowPolish(container.id);
                     saveSiteConfig();
                     requestAnimationFrame(() => window.remeasureTiltRects && window.remeasureTiltRects());
                 });
