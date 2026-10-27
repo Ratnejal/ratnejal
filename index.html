@@ -18,8 +18,8 @@
         :root {
             --lens-x: 50%;
             --lens-y: 50%;
-            --me-x: -77%;
-            --me-y: 9%;
+            --me-x: -61%;
+            --me-y: -2%;
             --me-scale: 1.74;
         }
 
@@ -69,7 +69,7 @@
             user-select: none;
         }
 
-        /* Оптимизация рендеринга больших галерей (браузер не тратит GPU на карточки за пределами экрана во время анимации фильтра) */
+        /* Оптимизация рендеринга больших галерей */
         .sortable-photo-item {
             content-visibility: auto;
             contain-intrinsic-size: auto 420px;
@@ -94,7 +94,7 @@
             opacity: 1;
         }
 
-        /* ==================== КАДРИРОВАНИЕ АВТОПОРТРЕТА ME.WEBP ==================== */
+        /* ==================== КАДРИРОВАНИЕ АВТОПОРТРЕТА ME.WEBP (ЭТАЛОН МАКБУКА) ==================== */
         .hero-photo-col {
             position: relative;
             overflow: visible !important;
@@ -128,8 +128,7 @@
             }
         }
 
-        /* Умная адаптация только для широких экранов 16:9 (Windows-ноутбуки и мониторы, где ширина к высоте > 1.63).
-           На MacBook 14" (соотношение ~1.54) это правило НЕ срабатывает, сохраняя твой эталонный вид 1-в-1! */
+        /* Эталонная геометрия с ratnejal.ru (включается на десктопных окнах браузера, включая MacBook) */
         @media (min-width: 640px) and (min-aspect-ratio: 163 / 100) {
             #hero-me-transform-box {
                 transform: translate3d(calc(var(--me-x) - 3%), var(--me-y), 0) scale(calc(var(--me-scale) * 0.91));
@@ -159,6 +158,14 @@
             }
             #card-reportage {
                 margin-top: clamp(1.25rem, 4.2vh, 2.5rem) !important;
+            }
+        }
+
+        /* Дополнительный подъём правой колонки ТОЛЬКО для широкоформатных Windows-экранов 16:9
+           (у которых с учётом шапки браузера соотношение рабочей области > 1.85; на MacBook это ~1.79 и не трогается) */
+        @media (min-width: 640px) and (min-aspect-ratio: 185 / 100) {
+            .hero-content-col {
+                padding-bottom: 8.5vh !important;
             }
         }
 
@@ -591,11 +598,11 @@
         <div class="grid grid-cols-3 gap-2 pt-1 border-t border-white/15 text-[11px]">
             <label class="flex flex-col gap-1">
                 <span>портрет X</span>
-                <input id="ctrl-me-x" type="range" min="-95" max="15" value="-77" oninput="updateMeCropFromSliders()" class="accent-white">
+                <input id="ctrl-me-x" type="range" min="-95" max="15" value="-61" oninput="updateMeCropFromSliders()" class="accent-white">
             </label>
             <label class="flex flex-col gap-1">
                 <span>портрет Y</span>
-                <input id="ctrl-me-y" type="range" min="-55" max="25" value="9" oninput="updateMeCropFromSliders()" class="accent-white">
+                <input id="ctrl-me-y" type="range" min="-55" max="25" value="-2" oninput="updateMeCropFromSliders()" class="accent-white">
             </label>
             <label class="flex flex-col gap-1">
                 <span>масштаб</span>
@@ -731,7 +738,7 @@
         <span>@ratnejal</span>
     </a>
 
-    <!-- ВОССТАНОВЛЕННЫЙ SVG-ФИЛЬТР ДИСКРЕТИЗАЦИИ (ПИКСЕЛИЗАЦИЯ ЭКРАНА ПРИ ХОДЕ ЗАТВОРА И ЛАЙТБОКСЕ) -->
+    <!-- SVG-ФИЛЬТРЫ ДИСКРЕТИЗАЦИИ (ПИКСЕЛИЗАЦИЯ ЭКРАНА ПРИ ХОДЕ ЗАТВОРА И ЛАЙТБОКСЕ) -->
     <svg width="0" height="0" style="position:absolute;pointer-events:none;" aria-hidden="true">
         <defs>
             <filter id="shutter-pixelate-filter" x="0%" y="0%" width="100%" height="100%" color-interpolation-filters="sRGB">
@@ -952,12 +959,12 @@
         const PHOTO_DIMS = {"me":{"w":3724,"h":5586},"pixel_DSCF9900":{"w":6240,"h":4160},"portreit_DSCF0022":{"w":6240,"h":4160},"portreit_DSCF2273":{"w":4091,"h":6137},"portreit_DSCF2279":{"w":4072,"h":4072},"portreit_DSCF2291":{"w":3807,"h":5710},"portreit_DSCF2292":{"w":4018,"h":6027},"portreit_DSCF2296":{"w":4160,"h":6240},"portreit_DSCF2321":{"w":3808,"h":5712},"portreit_DSCF2337":{"w":4160,"h":6240},"portreit_DSCF2346":{"w":4160,"h":6240},"portreit_DSCF2349":{"w":6240,"h":4160},"portreit_DSCF3937E":{"w":4160,"h":6240},"portreit_DSCF3965E":{"w":4160,"h":6240},"portreit_DSCF3973E":{"w":3576,"h":5364},"portreit_DSCF3982E":{"w":4101,"h":6152},"portreit_DSCF3985E2":{"w":4160,"h":6240},"portreit_DSCF3987E2":{"w":4160,"h":6240},"portreit_DSCF4009E2":{"w":4045,"h":6067},"portreit_DSCF4014E2":{"w":4160,"h":6240},"portreit_DSCF4017E2":{"w":4068,"h":6103},"portreit_DSCF4021E2":{"w":4004,"h":6006},"portreit_DSCF4027E2":{"w":3773,"h":5659},"portreit_DSCF4033E2":{"w":3809,"h":5713},"portreit_DSCF4036E2":{"w":4095,"h":6143},"portreit_DSCF4038E2":{"w":4155,"h":6232},"portreit_DSCF4042E2":{"w":4122,"h":6182},"portreit_DSCF4043E2":{"w":4160,"h":6240},"portreit_DSCF6799":{"w":4160,"h":6240},"portreit_DSCF6804":{"w":6127,"h":4085},"portreit_DSCF6827":{"w":4087,"h":6131},"portreit_DSCF6841":{"w":6240,"h":4160},"portreit_DSCF6852":{"w":4160,"h":6240},"portreit_DSCF6856":{"w":4160,"h":6240},"portreit_DSCF6858":{"w":4025,"h":6038},"portreit_DSCF6859":{"w":3940,"h":5910},"portreit_DSCF6896":{"w":6240,"h":4160},"portreit_DSCF6942":{"w":6240,"h":4160},"portreit_DSCF6949":{"w":6240,"h":4160},"portreit_DSCF8501e":{"w":6240,"h":4160},"portreit_DSCF8511e":{"w":1465,"h":2198},"portreit_DSCF8533e":{"w":4160,"h":6240},"portreit_DSCF8541e":{"w":6240,"h":4160},"portreit_DSCF8553e":{"w":2370,"h":3555},"portreit_DSCF9288":{"w":6240,"h":4160},"portreit_DSCF9320":{"w":6240,"h":4160},"portreit_DSCF9350":{"w":6240,"h":4160},"portreit_DSCF9369":{"w":6240,"h":4160},"portreit_DSCF9407":{"w":6240,"h":4160},"portreit_DSCF9454":{"w":6145,"h":4097},"portreit_DSCF9458":{"w":6181,"h":4121},"portreit_DSCF9471":{"w":6240,"h":4160},"portreit_DSCF9485":{"w":4160,"h":6240},"portreit_DSCF9561":{"w":6240,"h":4160},"portreit_DSCF9576":{"w":3299,"h":4948},"portreit_DSCF9597":{"w":4160,"h":6240},"portreit_DSCF9614":{"w":6240,"h":4160},"portreit_DSCF9624":{"w":6240,"h":4160},"portreit_DSCF9633":{"w":6240,"h":4160},"portreit_DSCF9669":{"w":3753,"h":5629},"portreit_DSCF9676":{"w":6240,"h":4160},"portreit_DSCF9685":{"w":6240,"h":4160},"portreit_DSCF9705":{"w":6240,"h":4160},"portreit_DSCF9723":{"w":4160,"h":6240},"portreit_DSCF9747":{"w":4160,"h":6240},"portreit_DSCF9768":{"w":6240,"h":4160},"portreit_DSCF9788":{"w":6240,"h":4160},"portreit_DSCF9816":{"w":6240,"h":4160},"portreit_DSCF9821":{"w":3743,"h":5615},"portreit_DSCF9822":{"w":4160,"h":6240},"portreit_DSCF9857":{"w":6240,"h":4160},"portreit_DSCF9884":{"w":6240,"h":4160},"portreit_DSCF9889":{"w":6240,"h":4160},"portreit_DSCF9890":{"w":6240,"h":4160},"portreit_DSCF9909":{"w":3612,"h":5418},"portreit_DSCF9920":{"w":6240,"h":4160},"portreit_DSCF9935":{"w":4160,"h":6240},"portreit_DSCF9966":{"w":6240,"h":4160},"portreit_DSCF9984":{"w":3686,"h":2458},"portreit_DSCF9985":{"w":4160,"h":6240},"portreit_DSCF9988":{"w":4160,"h":6240},"portreit_DSCF9989":{"w":6240,"h":4160},"portreit_INST_DSCF2758":{"w":2560,"h":1707},"portreit_INST_DSCF2768":{"w":2560,"h":1707},"portreit_INST_DSCF2782":{"w":1707,"h":2560},"portreit_INST_DSCF2797":{"w":2560,"h":1707},"portreit_INST_DSCF2819":{"w":2560,"h":2560},"portreit_INST_DSCF2835":{"w":1707,"h":2560},"portreit_INST_DSCF2842":{"w":1707,"h":2560},"portreit_INST_DSCF2844":{"w":2560,"h":1707},"portreit_INST_DSCF2846":{"w":2560,"h":1707},"portreit_INST_DSCF2874":{"w":2560,"h":1707},"portreit_INST_DSCF2885":{"w":1707,"h":2560},"portreit_INST_DSCF2894":{"w":2560,"h":1707},"portreit_INST_DSCF2896":{"w":2560,"h":1707},"portreit_INST_DSCF2911":{"w":2560,"h":1707},"portreit_INST_DSCF2912":{"w":2560,"h":1707},"portreit_INST_DSCF2916":{"w":2560,"h":1707},"portreit_INST_DSCF2920":{"w":1707,"h":2560},"portreit_INST_DSCF2936":{"w":2560,"h":1707},"portreit_INST_DSCF2976":{"w":2560,"h":1707},"portreit_INST_DSCF3044":{"w":1707,"h":2560},"portreit_INST_DSCF3051":{"w":2560,"h":1707},"portreit_INST_DSCF3054":{"w":1707,"h":2560},"portreit_INST_DSCF3062":{"w":1707,"h":2560},"portreit_INST_DSCF3080":{"w":2560,"h":1707},"portreit_INST_DSCF3102":{"w":2560,"h":1707},"portreit_INST_DSCF3107":{"w":1707,"h":2560},"portreit_INST_DSCF3109":{"w":1707,"h":2560},"portreit_INST_DSCF3144":{"w":1707,"h":2560},"portreit_INST_DSCF3155":{"w":1707,"h":2560},"portreit_INST_DSCF3174":{"w":1707,"h":2560},"portreit_INST_DSCF3182":{"w":2560,"h":1707},"portreit_INST_DSCF3223":{"w":1707,"h":2560},"portreit_INST_DSCF3261":{"w":2560,"h":1707},"portreit_INST_DSCF3270":{"w":2560,"h":1707},"portreit_INST_DSCF3271":{"w":2560,"h":1707},"portreit_INST_DSCF3276":{"w":1707,"h":2560},"portreit_INST_DSCF3278":{"w":2560,"h":1707},"portreit_INST_DSCF3295":{"w":1707,"h":2560},"portreit_INST_DSCF3299":{"w":1707,"h":2560},"portreit_INST_DSCF3310":{"w":2560,"h":1707},"portreit_INST_DSCF3367":{"w":2560,"h":1707},"portreit_INST_DSCF3378":{"w":1707,"h":2560},"portreit_INST_DSCF3379":{"w":1707,"h":2560},"portreit_Ретушь DSCF3916E2":{"w":4619,"h":3079},"portreit_asciikit-2026-05-10T19-00-39":{"w":3240,"h":2160},"documental_DSCF0127":{"w":6240,"h":4160},"documental_DSCF0159":{"w":4160,"h":6240},"documental_DSCF0167":{"w":6240,"h":4160},"documental_DSCF0277":{"w":6240,"h":4160},"documental_DSCF0289":{"w":6240,"h":4160},"documental_DSCF0294":{"w":3480,"h":5220},"documental_DSCF0295":{"w":3499,"h":5248},"documental_DSCF0527":{"w":1954,"h":1303},"documental_DSCF0571":{"w":3428,"h":2286},"documental_DSCF0573":{"w":2303,"h":3455},"documental_DSCF0583":{"w":1808,"h":1205},"documental_DSCF0613":{"w":1869,"h":1246},"documental_DSCF0672":{"w":3851,"h":2568},"documental_DSCF0810":{"w":4312,"h":2875},"documental_DSCF0878":{"w":5510,"h":3674},"documental_DSCF1133":{"w":6240,"h":4160},"documental_DSCF1180":{"w":3624,"h":5436},"documental_DSCF1218":{"w":3872,"h":5807},"documental_DSCF1229":{"w":4010,"h":2674},"documental_DSCF1250":{"w":3907,"h":2605},"documental_DSCF1854":{"w":1714,"h":2571},"documental_DSCF1870":{"w":2745,"h":1830},"documental_DSCF1889":{"w":4160,"h":6240},"documental_DSCF1893":{"w":5895,"h":3930},"documental_DSCF1911":{"w":3999,"h":5999},"documental_DSCF1914":{"w":6240,"h":4160},"documental_DSCF1917":{"w":4160,"h":6240},"documental_DSCF1923":{"w":6240,"h":4160},"documental_DSCF1934":{"w":6240,"h":4160},"documental_DSCF1942":{"w":4160,"h":6240},"documental_DSCF1946":{"w":4160,"h":6240},"documental_DSCF3708E":{"w":4160,"h":6240},"documental_DSCF3715E":{"w":6240,"h":4160},"documental_DSCF3720E":{"w":6240,"h":4160},"documental_DSCF3725E":{"w":6240,"h":4160},"documental_DSCF3729E":{"w":6240,"h":4160},"documental_DSCF3756E":{"w":6240,"h":4160},"documental_DSCF3765E":{"w":4061,"h":2707},"documental_DSCF3772E":{"w":6240,"h":4160},"documental_DSCF3776E":{"w":4160,"h":6240},"documental_DSCF3779E":{"w":4160,"h":6240},"documental_DSCF3800E":{"w":4160,"h":6240},"documental_DSCF3811E":{"w":2554,"h":3831},"documental_DSCF3817E":{"w":4160,"h":6240},"documental_DSCF3855E":{"w":4160,"h":6240},"documental_DSCF3863E":{"w":3231,"h":4846},"documental_DSCF3897E":{"w":1643,"h":2464},"documental_DSCF4464E":{"w":5973,"h":3982},"documental_DSCF4484E":{"w":4160,"h":6240},"documental_DSCF4495E":{"w":6240,"h":4160},"documental_DSCF4513E":{"w":1567,"h":2350},"documental_DSCF4523E":{"w":4160,"h":6240},"documental_DSCF4567E":{"w":3197,"h":4796},"documental_DSCF4579E":{"w":2213,"h":3319},"documental_DSCF4584E":{"w":5668,"h":3779},"documental_DSCF4626E":{"w":6240,"h":4160}};
 
         /* ==========================================================================
-           ЗАВОДСКАЯ КОНФИГУРАЦИЯ (С ТВОИМ НОВЫМ ПОРЯДКОМ РЕПОРТАЖА)
+           ЗАВОДСКАЯ КОНФИГУРАЦИЯ (ТОЧНО ИЗ ТВОЕГО КОНФИГА: -61%, -2%, 1.74)
            ========================================================================== */
         const SAVED_SITE_CONFIG = {
             "meCrop": {
-                "x": "-77%",
-                "y": "9%",
+                "x": "-61%",
+                "y": "-2%",
                 "scale": "1.74"
             },
             "texts": {
@@ -1122,12 +1129,92 @@
         }
 
         /* ==========================================================================
+           УМНАЯ ДВУХЭТАПНАЯ ПОДГРУЗКА ФОТО (LITE -> FULL HD) И ТЕСТ ИНТЕРНЕТА
+           ========================================================================== */
+        let isFastConnection = true;
+        let desktopHiResObserver = null;
+
+        function detectNetworkQuality() {
+            const conn = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+            if (conn) {
+                if (conn.saveData) {
+                    isFastConnection = false;
+                    return;
+                }
+                if (conn.effectiveType && (conn.effectiveType === 'slow-2g' || conn.effectiveType === '2g' || conn.effectiveType === '3g')) {
+                    isFastConnection = false;
+                    return;
+                }
+                if (typeof conn.downlink === 'number' && conn.downlink > 0 && conn.downlink < 2.2) {
+                    isFastConnection = false;
+                    return;
+                }
+            }
+            const start = performance.now();
+            const probe = new Image();
+            probe.onload = () => {
+                const elapsed = performance.now() - start;
+                if (elapsed > 650) {
+                    isFastConnection = false;
+                }
+            };
+            probe.src = PORTRAITS_THUMBS[0] || 'photos/me.webp';
+        }
+
+        function upgradeCardToFullRes(cardEl, onComplete) {
+            if (!cardEl) return;
+            const img = cardEl.querySelector('img');
+            if (!img) return;
+            const fullSrc = img.dataset.fullSrc;
+            if (!fullSrc || img.dataset.upgraded === '1') {
+                if (onComplete) onComplete(fullSrc || img.src);
+                return;
+            }
+            if (img.dataset.upgrading === '1') return;
+            img.dataset.upgrading = '1';
+
+            const loader = new Image();
+            loader.decoding = 'async';
+            loader.onload = () => {
+                img.src = fullSrc;
+                img.dataset.upgraded = '1';
+                delete img.dataset.upgrading;
+                if (onComplete) onComplete(fullSrc);
+            };
+            loader.onerror = () => {
+                delete img.dataset.upgrading;
+                if (onComplete) onComplete(img.src);
+            };
+            loader.src = fullSrc;
+        }
+
+        function initDesktopScrollHiResUpgrade() {
+            if (desktopHiResObserver) desktopHiResObserver.disconnect();
+            if (isMobileViewport() || !('IntersectionObserver' in window)) return;
+
+            desktopHiResObserver = new IntersectionObserver((entries, obs) => {
+                if (isMobileViewport() || !isFastConnection) return;
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        upgradeCardToFullRes(entry.target);
+                        obs.unobserve(entry.target);
+                    }
+                });
+            }, {
+                rootMargin: '350px 0px'
+            });
+
+            document.querySelectorAll('.sortable-photo-item').forEach(card => {
+                desktopHiResObserver.observe(card);
+            });
+        }
+
+        /* ==========================================================================
            ТАКТИЛЬНЫЙ ОТКЛИК (HAPTIC FEEDBACK — КОРОТКИЙ ПОСТУКИВАЮЩИЙ ИМПУЛЬС)
            ========================================================================== */
         let hapticCheckbox = null;
 
         function initHapticEngine() {
-            // Создаём скрытый switch-элемент для iOS 18+ Safari Taptic Engine + используем Vibration API для Android
             const label = document.createElement('label');
             label.setAttribute('aria-hidden', 'true');
             label.style.cssText = 'position:fixed;left:-9999px;top:-9999px;width:1px;height:1px;opacity:0;pointer-events:none;overflow:hidden;';
@@ -1142,7 +1229,6 @@
         function triggerHaptic(type = 'light') {
             try {
                 if (navigator.vibrate) {
-                    // Короткий 8-12мс микро-импульс ощущается как чёткий постукивающий клик, а не жужжание
                     navigator.vibrate(type === 'medium' ? 12 : 7);
                 } else if (hapticCheckbox && isMobileViewport()) {
                     hapticCheckbox.click();
@@ -1322,13 +1408,12 @@
         }
 
         /* ==========================================================================
-           1.5. ПРОСМОТРЩИК (LIGHTBOX) ДЛЯ ТЕЛЕФОНОВ И ПК: ПЛАВНАЯ ПИКСЕЛИЗАЦИЯ, ЗУМ И СВАЙПЫ
+           1.5. ПРОСМОТРЩИК (LIGHTBOX) ДЛЯ ТЕЛЕФОНОВ И ПК: ПОДГРУЗКА FULL HD ПРИ УВЕЛИЧЕНИИ
            ========================================================================== */
         let mobileLightboxOpen = false;
         let mobileLightboxItems = [];
         let mobileLightboxIndex = 0;
 
-        // Состояние трансформации фотографии в лайтбоксе (зум + панорамирование + свайп)
         let lbScale = 1;
         let lbPanX = 0;
         let lbPanY = 0;
@@ -1354,7 +1439,6 @@
             applyLightboxTransform(withTransition);
         }
 
-        // Плавная анимация пикселизации заднего фона (точно как при переходе ламельным затвором, с кэшированием шага)
         function setLightboxPixelProgress(eased) {
             const viewport = document.getElementById('app-viewport');
             const lb = document.getElementById('mobile-photo-lightbox');
@@ -1375,7 +1459,6 @@
             const bright = (1 - 0.28 * eased).toFixed(2);
             viewport.style.setProperty('--lb-bright', bright);
 
-            // Дискретный шаг через 2px исключает лишние пересчеты SVG-фильтра на каждом кадре (60 FPS без фризов)
             const rawSize = Math.max(2, Math.round(2 + 12 * eased));
             const pixelSize = rawSize % 2 === 0 ? rawSize : rawSize + 1;
 
@@ -1429,8 +1512,6 @@
             if (!grid) return;
 
             triggerHaptic('medium');
-
-            // Сбрасываем наклон карточки перед открытием
             resetCardTilt(cardEl);
 
             mobileLightboxItems = [...grid.querySelectorAll('.sortable-photo-item')];
@@ -1449,7 +1530,8 @@
 
         function updateMobileLightboxSlide(shouldScrollPage) {
             if (!mobileLightboxItems.length) return;
-            const item = mobileLightboxItems[mobileLightboxIndex];
+            const activeIndex = mobileLightboxIndex;
+            const item = mobileLightboxItems[activeIndex];
             if (!item) return;
 
             const imgInside = item.querySelector('img');
@@ -1460,9 +1542,19 @@
 
             if (imgInside && lbImg) {
                 lbImg.src = imgInside.src;
+                upgradeCardToFullRes(item, (hiResSrc) => {
+                    if (mobileLightboxOpen && mobileLightboxIndex === activeIndex && lbImg) {
+                        lbImg.src = hiResSrc;
+                    }
+                });
+
+                const nextItem = mobileLightboxItems[(activeIndex + 1) % mobileLightboxItems.length];
+                const prevItem = mobileLightboxItems[(activeIndex - 1 + mobileLightboxItems.length) % mobileLightboxItems.length];
+                if (nextItem) upgradeCardToFullRes(nextItem);
+                if (prevItem && isFastConnection) upgradeCardToFullRes(prevItem);
             }
             if (counter) {
-                counter.textContent = `${mobileLightboxIndex + 1} / ${mobileLightboxItems.length}`;
+                counter.textContent = `${activeIndex + 1} / ${mobileLightboxItems.length}`;
             }
 
             if (shouldScrollPage) {
@@ -1498,7 +1590,6 @@
         }
 
         function initMobileLightboxInteractions() {
-            // Открытие лайтбокса по клику на карточку (включая самый краешек карточки, даже когда она наклонена в 3D)
             ['portraits-sortable-grid', 'reportage-sortable-grid'].forEach(gridId => {
                 const grid = document.getElementById(gridId);
                 if (!grid) return;
@@ -1506,7 +1597,6 @@
                     if (isEditMode) return;
                     if (e.target.closest('.delete-photo-btn') || e.target.closest('.size-toggle-btn')) return;
                     let card = e.target.closest('.sortable-photo-item');
-                    // Если из-за 3D-перспективы на самом краю клик пришелся в 1-2px мимо 3D-плоскости, берем активную наклоненную карточку
                     if (!card && window.getCurrentHoveredCard) {
                         const hovered = window.getCurrentHoveredCard();
                         if (hovered && hovered.classList.contains('sortable-photo-item') && grid.contains(hovered)) {
@@ -1523,7 +1613,6 @@
             const lb = document.getElementById('mobile-photo-lightbox');
             const stage = document.getElementById('mobile-lightbox-stage');
 
-            // 1. СЕНСОРНЫЕ ЖЕСТЫ НА ТЕЛЕФОНЕ: щипок двумя пальцами (Pinch-to-Zoom), панорамирование и защита от ложного свайпа
             let isPinching = false;
             let wasMultiTouch = false;
             let initialPinchDist = 0;
@@ -1583,7 +1672,6 @@
                 if (e.touches.length < 2) {
                     isPinching = false;
                 }
-                // Если это было завершение мультитача (щипка), НЕ переключаем слайды!
                 if (wasMultiTouch) {
                     if (e.touches.length === 0) {
                         wasMultiTouch = false;
@@ -1605,7 +1693,6 @@
                 }
             }, { passive: true });
 
-            // 2. МЫШЬ НА ПК: зажатие и свайп влево/вправо (или перетаскивание приближенного фото)
             let isMouseDragging = false;
             let mouseStartX = 0, mouseStartY = 0;
             let mouseMoved = false;
@@ -1658,9 +1745,6 @@
                 }
             }, true);
 
-            // 3. УМНОЕ РАЗДЕЛЕНИЕ ТАЧПАДА MACBOOK И КОЛЕСИКА МЫШИ:
-            // • Щипок на тачпаде (e.ctrlKey === true) ИЛИ дискретное колесико мыши -> приближают/отдаляют фото
-            // • Два пальца по тачпаду (вверх-вниз / влево-вправо без e.ctrlKey) -> двигают приближенное фото или листают слайды!
             let wheelSwipeCooldown = 0;
             lb.addEventListener('wheel', (e) => {
                 if (!mobileLightboxOpen) return;
@@ -1669,7 +1753,6 @@
                 const isPinchGesture = e.ctrlKey;
                 const isDiscreteMouseWheel = !e.ctrlKey && e.deltaMode === 0 && Math.abs(e.deltaX) === 0 && Math.abs(e.deltaY) >= 40 && Number.isInteger(e.deltaY);
 
-                // А) Зум: щипок двумя пальцами на тачпаде ИЛИ дискретный скролл колесика обычной мыши
                 if (isPinchGesture || isDiscreteMouseWheel) {
                     const zoomFactor = isPinchGesture ? -e.deltaY * 0.014 : -e.deltaY * 0.0022;
                     lbScale = Math.min(4.5, Math.max(1, lbScale * (1 + zoomFactor)));
@@ -1682,8 +1765,6 @@
                     return;
                 }
 
-                // Б) Движение двумя пальцами по тачпаду:
-                // Если фотография приближена — свободно двигаем (панорамируем) её двумя пальцами в любую сторону
                 if (lbScale > 1.05) {
                     lbPanX -= e.deltaX;
                     lbPanY -= e.deltaY;
@@ -1691,7 +1772,6 @@
                     return;
                 }
 
-                // Если фотография не увеличена — свайп двумя пальцами влево/вправо переключает кадры
                 const now = performance.now();
                 if (Math.abs(e.deltaX) > Math.abs(e.deltaY) * 1.2 && Math.abs(e.deltaX) > 16) {
                     if (now - wheelSwipeCooldown > 420) {
@@ -1701,7 +1781,6 @@
                 }
             }, { passive: false });
 
-            // 4. Клавиатура на ПК (стрелки влево/вправо и Escape для закрытия)
             window.addEventListener('keydown', (e) => {
                 if (!mobileLightboxOpen) return;
                 if (e.key === 'ArrowRight') {
@@ -1795,7 +1874,6 @@
             viewport.classList.add('shutter-pixel-active');
             overlay.classList.add('active');
 
-            // Дискретизация с шагом 2px снижает нагрузку на пересчет SVG-морфологии в 2.5 раза при сохранении плавной пикселизации
             const rawPixelSize = Math.max(2, Math.round(2 + 26 * easedProgress));
             const pixelSize = rawPixelSize % 2 === 0 ? rawPixelSize : rawPixelSize + 1;
 
@@ -1940,7 +2018,7 @@
         }
 
         /* ==========================================================================
-           3. ЖУРНАЛЬНАЯ СЕТКА И УМНОЕ ВЫРАВНИВАНИЕ РЯДОВ
+           3. ЖУРНАЛЬНАЯ СЕТКА И УМНОЕ ВЫРАВНИВАНИЕ РЯДОВ (СТАРТ С LITE-ФОТО)
            ========================================================================== */
         const SPAN_LABELS = {
             '4': '1/3',
@@ -2031,6 +2109,9 @@
                 const plan = layoutPlan[i] || { span: '6', offset: false };
                 const span = plan.span;
 
+                const liteSrc = `${dir}/lite/${name}.webp`;
+                const fullSrc = `${dir}/${name}.webp`;
+
                 const el = document.createElement('div');
                 el.dataset.photoId = name;
                 el.dataset.colSpan = span;
@@ -2039,7 +2120,7 @@
                 el.className = `sortable-photo-item steam-card meta-box w-full mx-auto col-span-${span}` + (plan.offset ? ' mt-3 sm:mt-8 md:mt-10' : '');
 
                 el.innerHTML = `
-                    <img src="${dir}/${name}.webp" alt="" loading="lazy" decoding="async" draggable="false" oncontextmenu="return false;" class="absolute inset-0 w-full h-full object-cover" />
+                    <img src="${liteSrc}" data-lite-src="${liteSrc}" data-full-src="${fullSrc}" onerror="if(this.src!==this.dataset.fullSrc){this.src=this.dataset.fullSrc;this.dataset.upgraded='1';}" alt="" loading="lazy" decoding="async" draggable="false" oncontextmenu="return false;" class="absolute inset-0 w-full h-full object-cover" />
                     <button onclick="deletePhotoItem(event, this)" class="delete-photo-btn absolute top-2 left-2 sm:top-3 sm:left-3 z-30 bg-black/90 hover:bg-red-600 text-white font-dot text-[10px] sm:text-xs px-2 py-0.5 sm:px-2.5 sm:py-1 transition-colors">✕</button>
                     <button onclick="cycleItemSpan(event, this)" class="size-toggle-btn absolute top-2 right-2 sm:top-3 sm:right-3 z-30 bg-black text-white font-dot text-[10px] sm:text-xs px-2 py-0.5 sm:px-2.5 sm:py-1">размер: ${SPAN_LABELS[span]}</button>
                     <div class="steam-glare"></div>
@@ -2050,7 +2131,6 @@
             applyEditorialRowPolish(gridId);
         }
 
-        /* Умное выравнивание: одиночные карточки в ряду сдвигаются к центру/правее, чтобы не было пустой дыры справа */
         function applyEditorialRowPolish(gridId) {
             const grid = document.getElementById(gridId);
             if (!grid) return;
@@ -2155,7 +2235,7 @@
         let isEditMode = new URLSearchParams(window.location.search).get('edit') === '1';
         let draggedElement = null;
         let deletedHistory = [];
-        const SITE_CONFIG_KEY = 'ratnejal-site-config-v4';
+        const SITE_CONFIG_KEY = 'ratnejal-site-config-v6';
 
         function getSiteConfig() {
             try { return JSON.parse(localStorage.getItem(SITE_CONFIG_KEY)) || SAVED_SITE_CONFIG; } catch (_) { return SAVED_SITE_CONFIG; }
@@ -2279,6 +2359,8 @@
 
         function resetSiteEdits() {
             localStorage.removeItem(SITE_CONFIG_KEY);
+            localStorage.removeItem('ratnejal-site-config-v5');
+            localStorage.removeItem('ratnejal-site-config-v4');
             localStorage.removeItem('ratnejal-site-config-v3');
             localStorage.removeItem('ratnejal-site-config-v2');
             localStorage.removeItem('ratnejal-site-config-v1');
@@ -2429,11 +2511,13 @@
         }
 
         window.addEventListener('DOMContentLoaded', () => {
+            detectNetworkQuality();
             initHapticEngine();
             renderXT4ShutterFrame(0);
             buildGallery('portraits-sortable-grid', 'photos', PORTRAITS_FILES);
             buildGallery('reportage-sortable-grid', 'documental', DOCUMENTAL_FILES);
             applySavedConfig();
+            initDesktopScrollHiResUpgrade();
             populateCardGrid6x3('card-portraits', PORTRAITS_THUMBS);
             populateCardGrid6x3('card-reportage', DOCUMENTAL_THUMBS);
             initSteamCards();
