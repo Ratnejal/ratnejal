@@ -69,12 +69,6 @@
             user-select: none;
         }
 
-        /* Оптимизация рендеринга больших галерей */
-        .sortable-photo-item {
-            content-visibility: auto;
-            contain-intrinsic-size: auto 420px;
-        }
-
         #shutter-pixel-grid-overlay {
             position: fixed;
             inset: 0;
@@ -165,7 +159,10 @@
            (у которых с учётом шапки браузера соотношение рабочей области > 1.85; на MacBook это ~1.79 и не трогается) */
         @media (min-width: 640px) and (min-aspect-ratio: 185 / 100) {
             .hero-content-col {
-                padding-bottom: 8.5vh !important;
+                padding-bottom: 11vh !important;
+            }
+            .hero-title-desktop {
+                margin-bottom: clamp(1rem, 3.2vh, 2.1rem) !important;
             }
         }
 
@@ -622,7 +619,7 @@
                 <div class="hero-content-col order-1 sm:order-2 col-span-1 sm:col-span-7 flex flex-col justify-center px-6 pt-12 pb-6 sm:px-10 lg:py-0 lg:px-20 z-20">
                     
                     <div class="hero-inner-box max-w-xl w-full mx-auto sm:mx-0">
-                        <h1 data-editable-text="heroTitle" class="hero-title-mobile hero-title-desktop font-dot text-2xl sm:text-3xl md:text-4xl lg:text-5xl leading-snug text-[#111] mb-8 sm:mb-12 lg:mb-16">привет!<div>я женя, фотограф<br>из звенигорода.</div></h1>
+                        <h1 data-editable-text="heroTitle" class="hero-title-mobile hero-title-desktop font-dot text-2xl sm:text-3xl md:text-4xl lg:text-5xl leading-snug text-[#111] mb-8 sm:mb-12 lg:mb-16">привет!<div>я женя,<br class="hidden sm:inline"> фотограф<br>из<br class="hidden sm:inline"> звенигорода.</div></h1>
 
                         <div>
                             <div data-editable-text="heroSub" class="hero-sub-mobile hero-sub-desktop font-dot text-base sm:text-xl mb-5 sm:mb-8 text-[#111]">мои работы:</div>
@@ -968,7 +965,7 @@
                 "scale": "1.74"
             },
             "texts": {
-                "heroTitle": "привет!<div>я женя, фотограф<br>из звенигорода.</div>",
+                "heroTitle": "привет!<div>я женя,<br class=\"hidden sm:inline\"> фотограф<br>из<br class=\"hidden sm:inline\"> звенигорода.</div>",
                 "heroSub": "мои работы:",
                 "portraitsTitle": "портреты",
                 "portraitsIntro": "самый любимый жанр, мне нравится сложность человеческого лица и пластики тела.<br><br>здесь собраны разные микро жанры - кампейнов до психологического портрета.<br><br>главное, что я хочу показать — как я работаю с образом и какие стилистические решения принимаю.",
@@ -1129,83 +1126,98 @@
         }
 
         /* ==========================================================================
-           УМНАЯ ДВУХЭТАПНАЯ ПОДГРУЗКА ФОТО (LITE -> FULL HD) И ТЕСТ ИНТЕРНЕТА
+           УМНАЯ 3-ЭТАПНАЯ ПОДГРУЗКА ФОТО (LITE -> STANDARD -> HIGH)
            ========================================================================== */
         let isFastConnection = true;
-        let desktopHiResObserver = null;
+        let desktopStdObserver = null;
+        let lightboxHighTimer = null;
 
         function detectNetworkQuality() {
             const conn = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
             if (conn) {
-                if (conn.saveData) {
-                    isFastConnection = false;
-                    return;
-                }
-                if (conn.effectiveType && (conn.effectiveType === 'slow-2g' || conn.effectiveType === '2g' || conn.effectiveType === '3g')) {
-                    isFastConnection = false;
-                    return;
-                }
-                if (typeof conn.downlink === 'number' && conn.downlink > 0 && conn.downlink < 2.2) {
+                if (conn.saveData || conn.effectiveType === 'slow-2g' || conn.effectiveType === '2g') {
                     isFastConnection = false;
                     return;
                 }
             }
-            const start = performance.now();
-            const probe = new Image();
-            probe.onload = () => {
-                const elapsed = performance.now() - start;
-                if (elapsed > 650) {
-                    isFastConnection = false;
-                }
-            };
-            probe.src = PORTRAITS_THUMBS[0] || 'photos/me.webp';
+            isFastConnection = true;
         }
 
-        function upgradeCardToFullRes(cardEl, onComplete) {
+        // Переключает карточку с lite на обычную версию (Standard)
+        function upgradeCardToStandardRes(cardEl, onComplete) {
             if (!cardEl) return;
             const img = cardEl.querySelector('img');
             if (!img) return;
-            const fullSrc = img.dataset.fullSrc;
-            if (!fullSrc || img.dataset.upgraded === '1') {
-                if (onComplete) onComplete(fullSrc || img.src);
+            const stdSrc = img.dataset.stdSrc;
+            if (!stdSrc || img.dataset.stdUpgraded === '1') {
+                if (onComplete) onComplete(stdSrc || img.src);
                 return;
             }
-            if (img.dataset.upgrading === '1') return;
-            img.dataset.upgrading = '1';
+            if (img.dataset.stdUpgrading === '1') {
+                if (onComplete) onComplete(stdSrc);
+                return;
+            }
+            img.dataset.stdUpgrading = '1';
 
             const loader = new Image();
             loader.decoding = 'async';
             loader.onload = () => {
-                img.src = fullSrc;
-                img.dataset.upgraded = '1';
-                delete img.dataset.upgrading;
-                if (onComplete) onComplete(fullSrc);
+                img.src = stdSrc;
+                img.dataset.stdUpgraded = '1';
+                delete img.dataset.stdUpgrading;
+                if (onComplete) onComplete(stdSrc);
             };
             loader.onerror = () => {
-                delete img.dataset.upgrading;
+                delete img.dataset.stdUpgrading;
                 if (onComplete) onComplete(img.src);
             };
-            loader.src = fullSrc;
+            loader.src = stdSrc;
         }
 
-        function initDesktopScrollHiResUpgrade() {
-            if (desktopHiResObserver) desktopHiResObserver.disconnect();
+        // Подгружает третью ступень (супер-качество из папки high/) ТОЛЬКО для открытого Lightbox
+        function loadHighResForLightbox(cardEl, onComplete) {
+            if (!cardEl) return;
+            const img = cardEl.querySelector('img');
+            if (!img) return;
+            const highSrc = img.dataset.highSrc;
+            if (!highSrc) return;
+
+            if (img.dataset.highLoaded === '1') {
+                if (onComplete) onComplete(highSrc);
+                return;
+            }
+
+            const hiLoader = new Image();
+            hiLoader.decoding = 'async';
+            hiLoader.onload = () => {
+                img.dataset.highLoaded = '1';
+                if (onComplete) onComplete(highSrc);
+            };
+            hiLoader.onerror = () => {
+                // Если в папке high/ какого-то файла нет, остаётся обычная (standard) версия без ошибок
+            };
+            hiLoader.src = highSrc;
+        }
+
+        // На ноутбуках и ПК по мере скролла галереи сразу подгружает обычные (standard) версии вместо lite
+        function initDesktopScrollStandardUpgrade() {
+            if (desktopStdObserver) desktopStdObserver.disconnect();
             if (isMobileViewport() || !('IntersectionObserver' in window)) return;
 
-            desktopHiResObserver = new IntersectionObserver((entries, obs) => {
-                if (isMobileViewport() || !isFastConnection) return;
+            desktopStdObserver = new IntersectionObserver((entries, obs) => {
+                if (!isFastConnection) return;
                 entries.forEach(entry => {
                     if (entry.isIntersecting) {
-                        upgradeCardToFullRes(entry.target);
+                        upgradeCardToStandardRes(entry.target);
                         obs.unobserve(entry.target);
                     }
                 });
             }, {
-                rootMargin: '350px 0px'
+                rootMargin: '500px 0px'
             });
 
             document.querySelectorAll('.sortable-photo-item').forEach(card => {
-                desktopHiResObserver.observe(card);
+                desktopStdObserver.observe(card);
             });
         }
 
@@ -1408,7 +1420,7 @@
         }
 
         /* ==========================================================================
-           1.5. ПРОСМОТРЩИК (LIGHTBOX) ДЛЯ ТЕЛЕФОНОВ И ПК: ПОДГРУЗКА FULL HD ПРИ УВЕЛИЧЕНИИ
+           1.5. ПРОСМОТРЩИК (LIGHTBOX): ПОЭТАПНАЯ ПОДГРУЗКА (LITE -> STANDARD -> HIGH)
            ========================================================================== */
         let mobileLightboxOpen = false;
         let mobileLightboxItems = [];
@@ -1534,6 +1546,11 @@
             const item = mobileLightboxItems[activeIndex];
             if (!item) return;
 
+            if (lightboxHighTimer) {
+                clearTimeout(lightboxHighTimer);
+                lightboxHighTimer = null;
+            }
+
             const imgInside = item.querySelector('img');
             const lbImg = document.getElementById('mobile-lightbox-img');
             const counter = document.getElementById('mobile-lightbox-counter');
@@ -1541,17 +1558,33 @@
             resetLightboxZoom(true);
 
             if (imgInside && lbImg) {
+                // Шаг 1: мгновенно отображаем то, что уже есть в карточке (lite или standard)
                 lbImg.src = imgInside.src;
-                upgradeCardToFullRes(item, (hiResSrc) => {
-                    if (mobileLightboxOpen && mobileLightboxIndex === activeIndex && lbImg) {
-                        lbImg.src = hiResSrc;
+
+                // Шаг 2: сразу подгружаем обычную (standard) версию, а как только она готова — в фоне запрашиваем супер-качественную (high)
+                upgradeCardToStandardRes(item, (stdSrc) => {
+                    if (!mobileLightboxOpen || mobileLightboxIndex !== activeIndex) return;
+                    if (imgInside.dataset.highLoaded === '1' && imgInside.dataset.highSrc) {
+                        lbImg.src = imgInside.dataset.highSrc;
+                    } else {
+                        lbImg.src = stdSrc;
+                        // Шаг 3: через 120мс (чтобы не забивать канал при быстром листании) докачиваем high-версию
+                        lightboxHighTimer = setTimeout(() => {
+                            if (!mobileLightboxOpen || mobileLightboxIndex !== activeIndex) return;
+                            loadHighResForLightbox(item, (highSrc) => {
+                                if (mobileLightboxOpen && mobileLightboxIndex === activeIndex && lbImg) {
+                                    lbImg.src = highSrc;
+                                }
+                            });
+                        }, 120);
                     }
                 });
 
+                // Предзагружаем стандартные версии для соседних кадров
                 const nextItem = mobileLightboxItems[(activeIndex + 1) % mobileLightboxItems.length];
                 const prevItem = mobileLightboxItems[(activeIndex - 1 + mobileLightboxItems.length) % mobileLightboxItems.length];
-                if (nextItem) upgradeCardToFullRes(nextItem);
-                if (prevItem && isFastConnection) upgradeCardToFullRes(prevItem);
+                if (nextItem) upgradeCardToStandardRes(nextItem);
+                if (prevItem && isFastConnection) upgradeCardToStandardRes(prevItem);
             }
             if (counter) {
                 counter.textContent = `${activeIndex + 1} / ${mobileLightboxItems.length}`;
@@ -1572,6 +1605,10 @@
         function closeMobileLightbox(e) {
             if (e) e.stopPropagation();
             if (!mobileLightboxOpen) return;
+            if (lightboxHighTimer) {
+                clearTimeout(lightboxHighTimer);
+                lightboxHighTimer = null;
+            }
             triggerHaptic('light');
             mobileLightboxOpen = false;
             resetLightboxZoom(true);
@@ -1983,7 +2020,10 @@
             if (activeView) activeView.classList.remove('hidden');
 
             window.scrollTo({ top: 0, behavior: 'instant' });
-            requestAnimationFrame(() => window.remeasureTiltRects && window.remeasureTiltRects());
+            requestAnimationFrame(() => {
+                if (window.remeasureTiltRects) window.remeasureTiltRects();
+                initDesktopScrollStandardUpgrade();
+            });
         }
 
         function initBrowserHistoryNavigation() {
@@ -2018,7 +2058,7 @@
         }
 
         /* ==========================================================================
-           3. ЖУРНАЛЬНАЯ СЕТКА И УМНОЕ ВЫРАВНИВАНИЕ РЯДОВ (СТАРТ С LITE-ФОТО)
+           3. ЖУРНАЛЬНАЯ СЕТКА И 3 УРОВНЯ КАЧЕСТВА (LITE -> STANDARD -> HIGH)
            ========================================================================== */
         const SPAN_LABELS = {
             '4': '1/3',
@@ -2110,7 +2150,8 @@
                 const span = plan.span;
 
                 const liteSrc = `${dir}/lite/${name}.webp`;
-                const fullSrc = `${dir}/${name}.webp`;
+                const stdSrc = `${dir}/${name}.webp`;
+                const highSrc = `${dir}/high/${name}.webp`;
 
                 const el = document.createElement('div');
                 el.dataset.photoId = name;
@@ -2120,7 +2161,7 @@
                 el.className = `sortable-photo-item steam-card meta-box w-full mx-auto col-span-${span}` + (plan.offset ? ' mt-3 sm:mt-8 md:mt-10' : '');
 
                 el.innerHTML = `
-                    <img src="${liteSrc}" data-lite-src="${liteSrc}" data-full-src="${fullSrc}" onerror="if(this.src!==this.dataset.fullSrc){this.src=this.dataset.fullSrc;this.dataset.upgraded='1';}" alt="" loading="lazy" decoding="async" draggable="false" oncontextmenu="return false;" class="absolute inset-0 w-full h-full object-cover" />
+                    <img src="${liteSrc}" data-lite-src="${liteSrc}" data-std-src="${stdSrc}" data-high-src="${highSrc}" onerror="if(this.src!==this.dataset.stdSrc){this.src=this.dataset.stdSrc;this.dataset.stdUpgraded='1';}" alt="" loading="lazy" decoding="async" draggable="false" oncontextmenu="return false;" class="absolute inset-0 w-full h-full object-cover" />
                     <button onclick="deletePhotoItem(event, this)" class="delete-photo-btn absolute top-2 left-2 sm:top-3 sm:left-3 z-30 bg-black/90 hover:bg-red-600 text-white font-dot text-[10px] sm:text-xs px-2 py-0.5 sm:px-2.5 sm:py-1 transition-colors">✕</button>
                     <button onclick="cycleItemSpan(event, this)" class="size-toggle-btn absolute top-2 right-2 sm:top-3 sm:right-3 z-30 bg-black text-white font-dot text-[10px] sm:text-xs px-2 py-0.5 sm:px-2.5 sm:py-1">размер: ${SPAN_LABELS[span]}</button>
                     <div class="steam-glare"></div>
@@ -2235,7 +2276,7 @@
         let isEditMode = new URLSearchParams(window.location.search).get('edit') === '1';
         let draggedElement = null;
         let deletedHistory = [];
-        const SITE_CONFIG_KEY = 'ratnejal-site-config-v6';
+        const SITE_CONFIG_KEY = 'ratnejal-site-config-v7';
 
         function getSiteConfig() {
             try { return JSON.parse(localStorage.getItem(SITE_CONFIG_KEY)) || SAVED_SITE_CONFIG; } catch (_) { return SAVED_SITE_CONFIG; }
@@ -2266,7 +2307,13 @@
             if (!config) return;
             Object.entries(config.texts || {}).forEach(([key, value]) => {
                 const el = document.querySelector(`[data-editable-text="${key}"]`);
-                if (el) el.innerHTML = value;
+                if (el) {
+                    if (key === 'heroTitle') {
+                        el.innerHTML = 'привет!<div>я женя,<br class="hidden sm:inline"> фотограф<br>из<br class="hidden sm:inline"> звенигорода.</div>';
+                    } else {
+                        el.innerHTML = value;
+                    }
+                }
             });
             const crop = config.meCrop || {};
             ['x', 'y', 'scale'].forEach(key => {
@@ -2359,6 +2406,7 @@
 
         function resetSiteEdits() {
             localStorage.removeItem(SITE_CONFIG_KEY);
+            localStorage.removeItem('ratnejal-site-config-v6');
             localStorage.removeItem('ratnejal-site-config-v5');
             localStorage.removeItem('ratnejal-site-config-v4');
             localStorage.removeItem('ratnejal-site-config-v3');
@@ -2517,7 +2565,7 @@
             buildGallery('portraits-sortable-grid', 'photos', PORTRAITS_FILES);
             buildGallery('reportage-sortable-grid', 'documental', DOCUMENTAL_FILES);
             applySavedConfig();
-            initDesktopScrollHiResUpgrade();
+            initDesktopScrollStandardUpgrade();
             populateCardGrid6x3('card-portraits', PORTRAITS_THUMBS);
             populateCardGrid6x3('card-reportage', DOCUMENTAL_THUMBS);
             initSteamCards();
