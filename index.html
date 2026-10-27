@@ -128,29 +128,37 @@
             }
         }
 
-        /* Пропорциональное масштабирование правой колонки от высоты экрана на любых мониторах 16:9 и 17" ноутбуках, чтобы композиция всегда совпадала с 14" MacBook */
-        @media (min-width: 640px) {
+        /* Умная адаптация только для широких экранов 16:9 (Windows-ноутбуки и мониторы, где ширина к высоте > 1.63).
+           На MacBook 14" (соотношение ~1.54) это правило НЕ срабатывает, сохраняя твой эталонный вид 1-в-1! */
+        @media (min-width: 640px) and (min-aspect-ratio: 163 / 100) {
+            #hero-me-transform-box {
+                transform: translate3d(calc(var(--me-x) - 3%), var(--me-y), 0) scale(calc(var(--me-scale) * 0.91));
+            }
+            .hero-content-col {
+                padding-bottom: 5vh !important;
+                padding-left: clamp(2.5rem, 5.5vw, 6.5rem) !important;
+            }
             .hero-inner-box {
-                max-width: min(36rem, 44vw) !important;
+                max-width: min(35rem, 42vw) !important;
             }
             .hero-title-desktop {
-                font-size: clamp(1.85rem, min(5.4vh, 3.3vw), 3.25rem) !important;
-                line-height: 1.24 !important;
-                margin-bottom: clamp(1.5rem, 5.2vh, 4rem) !important;
+                font-size: clamp(1.75rem, 4.7vh, 2.85rem) !important;
+                line-height: 1.22 !important;
+                margin-bottom: clamp(1.25rem, 4.2vh, 2.75rem) !important;
             }
             .hero-sub-desktop {
-                font-size: clamp(0.95rem, min(2.3vh, 1.4vw), 1.3rem) !important;
-                margin-bottom: clamp(1rem, 2.8vh, 2rem) !important;
+                font-size: clamp(0.95rem, 2.1vh, 1.2rem) !important;
+                margin-bottom: clamp(0.75rem, 2.2vh, 1.5rem) !important;
             }
             .hero-cards-desktop {
-                gap: clamp(1rem, 2.2vw, 2.25rem) !important;
+                gap: clamp(1rem, 2vw, 2rem) !important;
             }
             #card-portraits,
             #card-reportage {
-                height: clamp(128px, 23.5vh, 220px) !important;
+                height: clamp(118px, 21vh, 195px) !important;
             }
             #card-reportage {
-                margin-top: clamp(1.5rem, 5.4vh, 3.25rem) !important;
+                margin-top: clamp(1.25rem, 4.2vh, 2.5rem) !important;
             }
         }
 
@@ -408,6 +416,12 @@
             transform-style: preserve-3d;
             transition: transform 0.16s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.2s ease;
             will-change: transform, box-shadow;
+        }
+
+        /* Делаем все внутренние декоративные слои карточки прозрачными для клика мыши,
+           чтобы клик по самому краю карточки (даже при 3D-наклоне) всегда срабатывал */
+        .steam-card > *:not(.delete-photo-btn):not(.size-toggle-btn) {
+            pointer-events: none;
         }
 
         .steam-glare {
@@ -1108,6 +1122,35 @@
         }
 
         /* ==========================================================================
+           ТАКТИЛЬНЫЙ ОТКЛИК (HAPTIC FEEDBACK — КОРОТКИЙ ПОСТУКИВАЮЩИЙ ИМПУЛЬС)
+           ========================================================================== */
+        let hapticCheckbox = null;
+
+        function initHapticEngine() {
+            // Создаём скрытый switch-элемент для iOS 18+ Safari Taptic Engine + используем Vibration API для Android
+            const label = document.createElement('label');
+            label.setAttribute('aria-hidden', 'true');
+            label.style.cssText = 'position:fixed;left:-9999px;top:-9999px;width:1px;height:1px;opacity:0;pointer-events:none;overflow:hidden;';
+            const input = document.createElement('input');
+            input.type = 'checkbox';
+            input.setAttribute('switch', '');
+            label.appendChild(input);
+            document.body.appendChild(label);
+            hapticCheckbox = input;
+        }
+
+        function triggerHaptic(type = 'light') {
+            try {
+                if (navigator.vibrate) {
+                    // Короткий 8-12мс микро-импульс ощущается как чёткий постукивающий клик, а не жужжание
+                    navigator.vibrate(type === 'medium' ? 12 : 7);
+                } else if (hapticCheckbox && isMobileViewport()) {
+                    hapticCheckbox.click();
+                }
+            } catch (_) {}
+        }
+
+        /* ==========================================================================
            0. ГЕНЕРАЦИЯ СЕТКИ 6x3 РАНДОМНЫХ ФОТО В КАРТОЧКАХ РАЗДЕЛОВ + ЛИНЗА РАЗБЛЮРА
            ========================================================================== */
         function populateCardGrid6x3(cardId, fileList) {
@@ -1246,6 +1289,7 @@
             window.addEventListener('resize', remeasureRestRects);
             window.addEventListener('scroll', remeasureRestRects, { passive: true });
             window.remeasureTiltRects = remeasureRestRects;
+            window.getCurrentHoveredCard = () => hoveredCard;
 
             document.addEventListener('touchstart', (e) => {
                 if (isEditMode) return;
@@ -1384,6 +1428,8 @@
             const grid = cardEl.parentElement;
             if (!grid) return;
 
+            triggerHaptic('medium');
+
             // Сбрасываем наклон карточки перед открытием
             resetCardTilt(cardEl);
 
@@ -1426,6 +1472,7 @@
 
         function stepMobileLightbox(delta) {
             if (!mobileLightboxOpen || !mobileLightboxItems.length) return;
+            triggerHaptic('light');
             mobileLightboxIndex = (mobileLightboxIndex + delta + mobileLightboxItems.length) % mobileLightboxItems.length;
             updateMobileLightboxSlide(true);
         }
@@ -1433,6 +1480,7 @@
         function closeMobileLightbox(e) {
             if (e) e.stopPropagation();
             if (!mobileLightboxOpen) return;
+            triggerHaptic('light');
             mobileLightboxOpen = false;
             resetLightboxZoom(true);
             document.getElementById('mobile-photo-lightbox').classList.remove('active');
@@ -1450,14 +1498,21 @@
         }
 
         function initMobileLightboxInteractions() {
-            // Открытие лайтбокса по клику на карточку как на телефоне, так и на ПК
+            // Открытие лайтбокса по клику на карточку (включая самый краешек карточки, даже когда она наклонена в 3D)
             ['portraits-sortable-grid', 'reportage-sortable-grid'].forEach(gridId => {
                 const grid = document.getElementById(gridId);
                 if (!grid) return;
                 grid.addEventListener('click', (e) => {
                     if (isEditMode) return;
                     if (e.target.closest('.delete-photo-btn') || e.target.closest('.size-toggle-btn')) return;
-                    const card = e.target.closest('.sortable-photo-item');
+                    let card = e.target.closest('.sortable-photo-item');
+                    // Если из-за 3D-перспективы на самом краю клик пришелся в 1-2px мимо 3D-плоскости, берем активную наклоненную карточку
+                    if (!card && window.getCurrentHoveredCard) {
+                        const hovered = window.getCurrentHoveredCard();
+                        if (hovered && hovered.classList.contains('sortable-photo-item') && grid.contains(hovered)) {
+                            card = hovered;
+                        }
+                    }
                     if (card) {
                         e.preventDefault();
                         openMobileLightbox(card);
@@ -1603,32 +1658,47 @@
                 }
             }, true);
 
-            // 3. КОЛЕСИКО МЫШИ И ТАЧПАД (приближение скроллом/щипком на тачпаде + свайп двумя пальцами влево/вправо)
+            // 3. УМНОЕ РАЗДЕЛЕНИЕ ТАЧПАДА MACBOOK И КОЛЕСИКА МЫШИ:
+            // • Щипок на тачпаде (e.ctrlKey === true) ИЛИ дискретное колесико мыши -> приближают/отдаляют фото
+            // • Два пальца по тачпаду (вверх-вниз / влево-вправо без e.ctrlKey) -> двигают приближенное фото или листают слайды!
             let wheelSwipeCooldown = 0;
             lb.addEventListener('wheel', (e) => {
                 if (!mobileLightboxOpen) return;
                 e.preventDefault();
 
+                const isPinchGesture = e.ctrlKey;
+                const isDiscreteMouseWheel = !e.ctrlKey && e.deltaMode === 0 && Math.abs(e.deltaX) === 0 && Math.abs(e.deltaY) >= 40 && Number.isInteger(e.deltaY);
+
+                // А) Зум: щипок двумя пальцами на тачпаде ИЛИ дискретный скролл колесика обычной мыши
+                if (isPinchGesture || isDiscreteMouseWheel) {
+                    const zoomFactor = isPinchGesture ? -e.deltaY * 0.014 : -e.deltaY * 0.0022;
+                    lbScale = Math.min(4.5, Math.max(1, lbScale * (1 + zoomFactor)));
+                    if (lbScale <= 1.03) {
+                        lbScale = 1;
+                        lbPanX = 0;
+                        lbPanY = 0;
+                    }
+                    applyLightboxTransform(false);
+                    return;
+                }
+
+                // Б) Движение двумя пальцами по тачпаду:
+                // Если фотография приближена — свободно двигаем (панорамируем) её двумя пальцами в любую сторону
+                if (lbScale > 1.05) {
+                    lbPanX -= e.deltaX;
+                    lbPanY -= e.deltaY;
+                    applyLightboxTransform(false);
+                    return;
+                }
+
+                // Если фотография не увеличена — свайп двумя пальцами влево/вправо переключает кадры
                 const now = performance.now();
-                // Горизонтальный свайп двумя пальцами на тачпаде MacBook (когда фото не увеличено)
-                if (!e.ctrlKey && lbScale <= 1.05 && Math.abs(e.deltaX) > Math.abs(e.deltaY) * 1.3 && Math.abs(e.deltaX) > 18) {
+                if (Math.abs(e.deltaX) > Math.abs(e.deltaY) * 1.2 && Math.abs(e.deltaX) > 16) {
                     if (now - wheelSwipeCooldown > 420) {
                         wheelSwipeCooldown = now;
                         stepMobileLightbox(e.deltaX > 0 ? 1 : -1);
                     }
-                    return;
                 }
-
-                // Зум колесиком мыши или щипком на тачпаде
-                const zoomFactor = e.ctrlKey ? -e.deltaY * 0.014 : -e.deltaY * 0.0022;
-                const nextScale = Math.min(4.5, Math.max(1, lbScale * (1 + zoomFactor)));
-                lbScale = nextScale;
-                if (lbScale <= 1.03) {
-                    lbScale = 1;
-                    lbPanX = 0;
-                    lbPanY = 0;
-                }
-                applyLightboxTransform(false);
             }, { passive: false });
 
             // 4. Клавиатура на ПК (стрелки влево/вправо и Escape для закрытия)
@@ -1750,6 +1820,8 @@
             if (mobileLightboxOpen) closeMobileLightbox();
             if (isShutterAnimating || targetPage === currentPage) return;
             isShutterAnimating = true;
+
+            triggerHaptic('medium');
 
             if (!fromHistory) {
                 const newHash = targetPage === 'home' ? window.location.pathname + window.location.search : `#${targetPage}`;
@@ -2357,6 +2429,7 @@
         }
 
         window.addEventListener('DOMContentLoaded', () => {
+            initHapticEngine();
             renderXT4ShutterFrame(0);
             buildGallery('portraits-sortable-grid', 'photos', PORTRAITS_FILES);
             buildGallery('reportage-sortable-grid', 'documental', DOCUMENTAL_FILES);
