@@ -155,14 +155,12 @@
             }
         }
 
-        /* Дополнительный подъём правой колонки ТОЛЬКО для широкоформатных Windows-экранов 16:9
-           (у которых с учётом шапки браузера соотношение рабочей области > 1.85; на MacBook это ~1.79 и не трогается) */
-        @media (min-width: 640px) and (min-aspect-ratio: 185 / 100) {
+        /* Сдвиг правой колонки ВЫШЕ и ПРАВЕЕ только для широкоформатных Windows-экранов 16:9
+           (соотношение рабочей области окна на 16:9 с шапкой браузера = 1.80..1.92; на MacBook 14" оно ~1.75 и не затрагивается) */
+        @media (min-width: 640px) and (min-aspect-ratio: 180 / 100) {
             .hero-content-col {
-                padding-bottom: 11vh !important;
-            }
-            .hero-title-desktop {
-                margin-bottom: clamp(1rem, 3.2vh, 2.1rem) !important;
+                padding-bottom: 15vh !important;
+                padding-left: clamp(5.5rem, 9.5vw, 11rem) !important;
             }
         }
 
@@ -280,6 +278,8 @@
             cursor: grabbing;
         }
 
+        /* Важно: без will-change: transform, чтобы браузер не запекал низкополигональную GPU-текстуру
+           и при сильном зуме (scale > 1) отрисовывал все пиксели загруженной high-версии */
         #mobile-lightbox-img {
             max-width: 90vw;
             max-height: 78dvh;
@@ -290,7 +290,6 @@
             border: 1px solid rgba(255, 255, 255, 0.22);
             background: #111;
             transform-origin: center center;
-            will-change: transform;
             transition: transform 0.24s cubic-bezier(0.22, 1, 0.36, 1);
             user-select: none;
             -webkit-user-drag: none;
@@ -559,7 +558,7 @@
         </button>
 
         <div id="mobile-lightbox-stage">
-            <img id="mobile-lightbox-img" src="" alt="" draggable="false" oncontextmenu="return false;" />
+            <img id="mobile-lightbox-img" src="" alt="" decoding="sync" draggable="false" oncontextmenu="return false;" />
         </div>
 
         <div class="fixed bottom-6 left-0 right-0 flex items-center justify-center gap-5 z-50 px-6" onclick="event.stopPropagation()">
@@ -1143,7 +1142,7 @@
             isFastConnection = true;
         }
 
-        // Переключает карточку с lite на обычную версию (Standard)
+        // Переключает карточку с lite на обычную версию (Standard) с поддержкой очереди колбэков
         function upgradeCardToStandardRes(cardEl, onComplete) {
             if (!cardEl) return;
             const img = cardEl.querySelector('img');
@@ -1153,8 +1152,11 @@
                 if (onComplete) onComplete(stdSrc || img.src);
                 return;
             }
+
+            if (!cardEl._stdCallbacks) cardEl._stdCallbacks = [];
+            if (onComplete) cardEl._stdCallbacks.push(onComplete);
+
             if (img.dataset.stdUpgrading === '1') {
-                if (onComplete) onComplete(stdSrc);
                 return;
             }
             img.dataset.stdUpgrading = '1';
@@ -1165,16 +1167,20 @@
                 img.src = stdSrc;
                 img.dataset.stdUpgraded = '1';
                 delete img.dataset.stdUpgrading;
-                if (onComplete) onComplete(stdSrc);
+                const cbs = cardEl._stdCallbacks || [];
+                cardEl._stdCallbacks = [];
+                cbs.forEach(cb => cb(stdSrc));
             };
             loader.onerror = () => {
                 delete img.dataset.stdUpgrading;
-                if (onComplete) onComplete(img.src);
+                const cbs = cardEl._stdCallbacks || [];
+                cardEl._stdCallbacks = [];
+                cbs.forEach(cb => cb(img.src));
             };
             loader.src = stdSrc;
         }
 
-        // Подгружает третью ступень (супер-качество из папки high/) ТОЛЬКО для открытого Lightbox
+        // Подгружает третью ступень (супер-качество из папки high/) для открытого Lightbox
         function loadHighResForLightbox(cardEl, onComplete) {
             if (!cardEl) return;
             const img = cardEl.querySelector('img');
@@ -1187,14 +1193,26 @@
                 return;
             }
 
+            if (!cardEl._highCallbacks) cardEl._highCallbacks = [];
+            if (onComplete) cardEl._highCallbacks.push(onComplete);
+
+            if (img.dataset.highLoading === '1') {
+                return;
+            }
+            img.dataset.highLoading = '1';
+
             const hiLoader = new Image();
             hiLoader.decoding = 'async';
             hiLoader.onload = () => {
                 img.dataset.highLoaded = '1';
-                if (onComplete) onComplete(highSrc);
+                delete img.dataset.highLoading;
+                const cbs = cardEl._highCallbacks || [];
+                cardEl._highCallbacks = [];
+                cbs.forEach(cb => cb(highSrc));
             };
             hiLoader.onerror = () => {
-                // Если в папке high/ какого-то файла нет, остаётся обычная (standard) версия без ошибок
+                delete img.dataset.highLoading;
+                cardEl._highCallbacks = [];
             };
             hiLoader.src = highSrc;
         }
@@ -1433,6 +1451,22 @@
         let lbCurrentPixelProgress = 0;
         let lastAppliedLbPixelSize = -1;
 
+        function ensureCurrentSlideHighRes() {
+            if (!mobileLightboxOpen || !mobileLightboxItems.length) return;
+            const activeIndex = mobileLightboxIndex;
+            const item = mobileLightboxItems[activeIndex];
+            if (!item) return;
+            const lbImg = document.getElementById('mobile-lightbox-img');
+            loadHighResForLightbox(item, (highSrc) => {
+                if (mobileLightboxOpen && mobileLightboxIndex === activeIndex && lbImg) {
+                    lbImg.dataset.showingHigh = '1';
+                    if (lbImg.getAttribute('src') !== highSrc) {
+                        lbImg.src = highSrc;
+                    }
+                }
+            });
+        }
+
         function applyLightboxTransform(withTransition = false) {
             const lbImg = document.getElementById('mobile-lightbox-img');
             if (!lbImg) return;
@@ -1440,6 +1474,9 @@
                 lbImg.classList.remove('gesture-active');
             } else {
                 lbImg.classList.add('gesture-active');
+            }
+            if (lbScale > 1.04 && lbImg.dataset.showingHigh !== '1') {
+                ensureCurrentSlideHighRes();
             }
             lbImg.style.transform = `translate3d(${lbPanX.toFixed(1)}px, ${lbPanY.toFixed(1)}px, 0) scale(${lbScale.toFixed(3)})`;
         }
@@ -1558,27 +1595,30 @@
             resetLightboxZoom(true);
 
             if (imgInside && lbImg) {
-                // Шаг 1: мгновенно отображаем то, что уже есть в карточке (lite или standard)
-                lbImg.src = imgInside.src;
+                delete lbImg.dataset.showingHigh;
 
-                // Шаг 2: сразу подгружаем обычную (standard) версию, а как только она готова — в фоне запрашиваем супер-качественную (high)
-                upgradeCardToStandardRes(item, (stdSrc) => {
-                    if (!mobileLightboxOpen || mobileLightboxIndex !== activeIndex) return;
-                    if (imgInside.dataset.highLoaded === '1' && imgInside.dataset.highSrc) {
-                        lbImg.src = imgInside.dataset.highSrc;
-                    } else {
-                        lbImg.src = stdSrc;
-                        // Шаг 3: через 120мс (чтобы не забивать канал при быстром листании) докачиваем high-версию
-                        lightboxHighTimer = setTimeout(() => {
-                            if (!mobileLightboxOpen || mobileLightboxIndex !== activeIndex) return;
-                            loadHighResForLightbox(item, (highSrc) => {
-                                if (mobileLightboxOpen && mobileLightboxIndex === activeIndex && lbImg) {
-                                    lbImg.src = highSrc;
-                                }
-                            });
-                        }, 120);
-                    }
-                });
+                // Если для этого кадра уже загружена high-версия, ставим её сразу же
+                if (imgInside.dataset.highLoaded === '1' && imgInside.dataset.highSrc) {
+                    lbImg.dataset.showingHigh = '1';
+                    lbImg.src = imgInside.dataset.highSrc;
+                } else {
+                    // Шаг 1: мгновенно отображаем то, что уже есть в карточке (lite или standard)
+                    lbImg.src = imgInside.src;
+
+                    // Шаг 2: параллельно подгружаем обычную (standard) версию (если ещё не загружена)
+                    upgradeCardToStandardRes(item, (stdSrc) => {
+                        if (!mobileLightboxOpen || mobileLightboxIndex !== activeIndex) return;
+                        if (lbImg.dataset.showingHigh !== '1') {
+                            lbImg.src = stdSrc;
+                        }
+                    });
+
+                    // Шаг 3: независимо от статуса standard, через 80мс запускаем загрузку супер-качественной (high) версии
+                    lightboxHighTimer = setTimeout(() => {
+                        if (!mobileLightboxOpen || mobileLightboxIndex !== activeIndex) return;
+                        ensureCurrentSlideHighRes();
+                    }, 80);
+                }
 
                 // Предзагружаем стандартные версии для соседних кадров
                 const nextItem = mobileLightboxItems[(activeIndex + 1) % mobileLightboxItems.length];
@@ -2149,9 +2189,9 @@
                 const plan = layoutPlan[i] || { span: '6', offset: false };
                 const span = plan.span;
 
-                const liteSrc = `${dir}/lite/${name}.webp`;
-                const stdSrc = `${dir}/${name}.webp`;
-                const highSrc = `${dir}/high/${name}.webp`;
+                const liteSrc = encodeURI(`${dir}/lite/${name}.webp`);
+                const stdSrc = encodeURI(`${dir}/${name}.webp`);
+                const highSrc = encodeURI(`${dir}/high/${name}.webp`);
 
                 const el = document.createElement('div');
                 el.dataset.photoId = name;
