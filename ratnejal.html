@@ -1,0 +1,2620 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+    <title>ratnejal</title>
+    <meta property="og:title" content="ratnejal">
+    <meta property="og:site_name" content="ratnejal">
+    <meta name="apple-mobile-web-app-title" content="ratnejal">
+    <!-- Пиксельное SVG-лого (иконка видоискателя камеры) для вкладки браузера и превью ссылок -->
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' shape-rendering='crispEdges'%3E%3Crect width='16' height='16' fill='%23FFFFFF'/%3E%3Cpath fill='%23111111' d='M1,1h4v1h-3v3h-1ZM11,1h4v4h-1v-3h-3ZM1,11h1v3h3v1h-4ZM14,11h1v4h-4v-1h3ZM5,4h6v1h-6ZM4,5h1v6h-1ZM11,5h1v6h-1ZM5,11h6v1h-6ZM7,7h2v2h-2Z'/%3E%3C/svg%3E">
+    <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' shape-rendering='crispEdges'%3E%3Crect width='16' height='16' fill='%23FFFFFF'/%3E%3Cpath fill='%23111111' d='M1,1h4v1h-3v3h-1ZM11,1h4v4h-1v-3h-3ZM1,11h1v3h3v1h-4ZM14,11h1v4h-4v-1h3ZM5,4h6v1h-6ZM4,5h1v6h-1ZM11,5h1v6h-1ZM5,11h6v1h-6ZM7,7h2v2h-2Z'/%3E%3C/svg%3E">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DotGothic16&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --lens-x: 50%;
+            --lens-y: 50%;
+            --me-x: -61%;
+            --me-y: -2%;
+            --me-scale: 1.74;
+        }
+
+        * {
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #FFFFFF;
+            color: #111111;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            overflow-x: hidden;
+        }
+
+        .font-dot {
+            font-family: 'DotGothic16', monospace;
+            letter-spacing: 0.02em;
+        }
+
+        .pixel-crisp-svg {
+            shape-rendering: crispEdges;
+            image-rendering: -moz-crisp-edges;
+            image-rendering: crisp-edges;
+            image-rendering: pixelated;
+            transform: translateZ(0);
+        }
+
+        /* ==================== КОНТЕЙНЕР САЙТА И ЭФФЕКТ ПИКСЕЛИЗАЦИИ ЗАТВОРА ==================== */
+        #app-viewport {
+            transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+            will-change: filter;
+        }
+
+        #app-viewport.shutter-pixel-active {
+            filter: url(#shutter-pixelate-filter) contrast(1.08);
+        }
+
+        #app-viewport.lightbox-pixel-active {
+            filter: url(#mobile-lightbox-pixel-filter) brightness(var(--lb-bright, 1)) contrast(1.08);
+        }
+
+        body.mobile-lightbox-open #app-viewport {
+            pointer-events: none;
+            user-select: none;
+        }
+
+        #shutter-pixel-grid-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 9990;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.14s ease;
+            background-image:
+                linear-gradient(to right, rgba(17, 17, 17, 0.16) 2px, transparent 2px),
+                linear-gradient(to bottom, rgba(17, 17, 17, 0.16) 2px, transparent 2px);
+            background-size: var(--px-grid-size, 18px) var(--px-grid-size, 18px);
+            backdrop-filter: blur(var(--px-blur, 0px)) contrast(1.18);
+            -webkit-backdrop-filter: blur(var(--px-blur, 0px)) contrast(1.18);
+        }
+
+        #shutter-pixel-grid-overlay.active {
+            opacity: 1;
+        }
+
+        /* ==================== КАДРИРОВАНИЕ АВТОПОРТРЕТА ME.WEBP (ЭТАЛОН МАКБУКА) ==================== */
+        .hero-photo-col {
+            position: relative;
+            overflow: visible !important;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        #hero-me-transform-box {
+            height: 100%;
+            aspect-ratio: 3724 / 5586;
+            overflow: visible !important;
+            transform-origin: bottom left;
+            transform: translate3d(var(--me-x), var(--me-y), 0) scale(var(--me-scale));
+            transition: transform 0.08s ease-out;
+        }
+
+        #hero-me-photo {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            object-position: left bottom;
+            image-rendering: -moz-crisp-edges;
+            image-rendering: crisp-edges;
+            image-rendering: pixelated;
+            display: block;
+        }
+
+        @media (min-width: 640px) and (max-width: 1150px) {
+            #hero-me-transform-box {
+                transform: translate3d(calc(var(--me-x) - 6%), var(--me-y), 0) scale(1.62);
+            }
+        }
+
+        /* Эталонная геометрия с ratnejal.ru (включается на десктопных окнах браузера, включая MacBook) */
+        @media (min-width: 640px) and (min-aspect-ratio: 163 / 100) {
+            #hero-me-transform-box {
+                transform: translate3d(calc(var(--me-x) - 3%), var(--me-y), 0) scale(calc(var(--me-scale) * 0.91));
+            }
+            .hero-content-col {
+                padding-bottom: 5vh !important;
+                padding-left: clamp(2.5rem, 5.5vw, 6.5rem) !important;
+            }
+            .hero-inner-box {
+                max-width: min(35rem, 42vw) !important;
+            }
+            .hero-title-desktop {
+                font-size: clamp(1.75rem, 4.7vh, 2.85rem) !important;
+                line-height: 1.22 !important;
+                margin-bottom: clamp(1.25rem, 4.2vh, 2.75rem) !important;
+            }
+            .hero-sub-desktop {
+                font-size: clamp(0.95rem, 2.1vh, 1.2rem) !important;
+                margin-bottom: clamp(0.75rem, 2.2vh, 1.5rem) !important;
+            }
+            .hero-cards-desktop {
+                gap: clamp(1rem, 2vw, 2rem) !important;
+            }
+            #card-portraits,
+            #card-reportage {
+                height: clamp(118px, 21vh, 195px) !important;
+            }
+            #card-reportage {
+                margin-top: clamp(1.25rem, 4.2vh, 2.5rem) !important;
+            }
+        }
+
+        /* Сдвиг правой колонки ВЫШЕ и ПРАВЕЕ только для широкоформатных Windows-экранов 16:9
+           (соотношение рабочей области окна на 16:9 с шапкой браузера = 1.80..1.92; на MacBook 14" оно ~1.75 и не затрагивается) */
+        @media (min-width: 640px) and (min-aspect-ratio: 180 / 100) {
+            .hero-content-col {
+                padding-bottom: 15vh !important;
+                padding-left: clamp(5.5rem, 9.5vw, 11rem) !important;
+            }
+        }
+
+        @media (max-width: 639px) {
+            #page-home {
+                height: 100dvh;
+                max-height: 100dvh;
+                overflow: hidden;
+                position: relative;
+            }
+
+            .hero-content-col {
+                width: 100%;
+                height: 100dvh;
+                justify-content: flex-start !important;
+                padding: 6.5vh 5vw 0 7.5vw !important;
+            }
+
+            .hero-title-mobile {
+                font-size: clamp(1.42rem, 6.1vw, 1.8rem) !important;
+                line-height: 1.35 !important;
+                margin-bottom: 3vh !important;
+            }
+
+            .hero-title-mobile div {
+                display: inline;
+            }
+
+            .hero-sub-mobile {
+                font-size: 1rem !important;
+                margin-bottom: 1.8vh !important;
+                padding-left: 16vw;
+            }
+
+            .hero-cards-mobile {
+                display: flex !important;
+                flex-direction: column !important;
+                gap: 2.2vh !important;
+            }
+
+            #card-portraits {
+                width: 46vw !important;
+                height: 15.2vh !important;
+                min-height: 102px;
+                max-height: 136px;
+                margin-left: 16vw !important;
+            }
+
+            #card-reportage {
+                width: 46vw !important;
+                height: 15.2vh !important;
+                min-height: 102px;
+                max-height: 136px;
+                margin-top: 0 !important;
+                margin-left: 41vw !important;
+            }
+
+            .hero-photo-col {
+                position: absolute !important;
+                left: 0;
+                bottom: 0;
+                width: 82vw !important;
+                height: 66dvh !important;
+                overflow: visible !important;
+                z-index: 10;
+            }
+
+            #hero-me-transform-box {
+                width: 100%;
+                height: 100%;
+                transform-origin: bottom left;
+                transform: translate3d(-77%, 9%, 0) scale(1.62);
+            }
+        }
+
+        /* ==================== ПРОСМОТРЩИК ФОТО (LIGHTBOX НА ТЕЛЕФОНЕ И ПК С ЗУМОМ И СВАЙПАМИ) ==================== */
+        #mobile-photo-lightbox {
+            position: fixed;
+            inset: 0;
+            z-index: 9985;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background-color: rgba(12, 12, 12, 0.56);
+            background-image:
+                linear-gradient(to right, rgba(0, 0, 0, 0.24) 2px, transparent 2px),
+                linear-gradient(to bottom, rgba(0, 0, 0, 0.24) 2px, transparent 2px);
+            background-size: var(--lb-grid-size, 12px) var(--lb-grid-size, 12px);
+            opacity: 0;
+            pointer-events: none;
+            touch-action: none;
+            overflow: hidden;
+            transition: opacity 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+        }
+
+        #mobile-photo-lightbox.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        #mobile-lightbox-stage {
+            position: relative;
+            width: 100vw;
+            height: 100dvh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            touch-action: none;
+            cursor: grab;
+        }
+
+        #mobile-lightbox-stage:active {
+            cursor: grabbing;
+        }
+
+        /* Важно: без will-change: transform, чтобы браузер не запекал низкополигональную GPU-текстуру
+           и при сильном зуме (scale > 1) отрисовывал все пиксели загруженной high-версии */
+        #mobile-lightbox-img {
+            max-width: 90vw;
+            max-height: 78dvh;
+            width: auto;
+            height: auto;
+            object-fit: contain;
+            box-shadow: 0 24px 60px rgba(0, 0, 0, 0.65);
+            border: 1px solid rgba(255, 255, 255, 0.22);
+            background: #111;
+            transform-origin: center center;
+            transition: transform 0.24s cubic-bezier(0.22, 1, 0.36, 1);
+            user-select: none;
+            -webkit-user-drag: none;
+        }
+
+        #mobile-lightbox-img.gesture-active {
+            transition: none !important;
+        }
+
+        /* ==================== ЛАМЕЛЬНЫЙ ЗАТВОР FUJIFILM X-T4 ==================== */
+        #lamellar-shutter {
+            position: fixed;
+            inset: 0;
+            z-index: 9999;
+            pointer-events: none;
+            overflow: hidden;
+        }
+
+        .xt4-blade {
+            position: absolute;
+            left: -18vw;
+            width: 136vw;
+            height: 42vh;
+            will-change: transform;
+            transform: translate3d(0, -130vh, 0);
+            box-shadow: 0 12px 32px rgba(0, 0, 0, 0.6);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.09);
+            visibility: hidden;
+        }
+
+        #blade-1 {
+            background: linear-gradient(180deg, #090909 0%, #121212 100%);
+            z-index: 3;
+        }
+        #blade-2 {
+            background: linear-gradient(180deg, #151515 0%, #1F1F1F 100%);
+            z-index: 2;
+        }
+        #blade-3 {
+            background: linear-gradient(180deg, #222222 0%, #2C2C2C 100%);
+            z-index: 1;
+        }
+
+        #lamellar-shutter.active .xt4-blade {
+            visibility: visible;
+        }
+
+        #xt4-mechanism-svg {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 10;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.15s ease;
+        }
+
+        #lamellar-shutter.active #xt4-mechanism-svg {
+            opacity: 1;
+        }
+
+        #classic-shutter-backup {
+            position: fixed;
+            inset: 0;
+            background: #111111;
+            z-index: 9998;
+            pointer-events: none;
+            transform: scaleY(0);
+            transform-origin: top;
+            transition: transform 0.35s cubic-bezier(0.77, 0, 0.175, 1);
+        }
+
+        /* ==================== КАРТОЧКИ STEAM И МЕТА-БОКСЫ ==================== */
+        .meta-box {
+            position: relative;
+            background-color: #F4F4F2;
+            border: 1px solid rgba(17, 17, 17, 0.16);
+            overflow: hidden;
+        }
+
+        .steam-card img,
+        .sortable-photo-item img {
+            pointer-events: none !important;
+            user-select: none !important;
+            -webkit-user-drag: none !important;
+            -webkit-touch-callout: none !important;
+        }
+
+        .delete-photo-btn {
+            display: none;
+        }
+
+        .edit-mode-active .delete-photo-btn {
+            display: block;
+        }
+
+        #tg-floating-btn {
+            padding: 10px 18px;
+            border-radius: 9999px;
+        }
+
+        #tg-floating-btn::before {
+            content: '';
+            position: absolute;
+            inset: -8px -14px;
+            border-radius: 9999px;
+            background: radial-gradient(ellipse at center, rgba(255, 255, 255, 0.88) 0%, rgba(255, 255, 255, 0.55) 55%, rgba(255, 255, 255, 0) 100%);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            -webkit-mask-image: radial-gradient(ellipse at center, rgba(0, 0, 0, 1) 25%, rgba(0, 0, 0, 0.65) 62%, rgba(0, 0, 0, 0) 100%);
+            mask-image: radial-gradient(ellipse at center, rgba(0, 0, 0, 1) 25%, rgba(0, 0, 0, 0.65) 62%, rgba(0, 0, 0, 0) 100%);
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        body.edit-mode-active #tg-floating-btn {
+            bottom: 220px;
+        }
+
+        .steam-card-wrapper {
+            perspective: 1100px;
+        }
+
+        .steam-card {
+            position: relative;
+            transform-style: preserve-3d;
+            transition: transform 0.16s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.2s ease;
+            will-change: transform, box-shadow;
+        }
+
+        /* Делаем все внутренние декоративные слои карточки прозрачными для клика мыши,
+           чтобы клик по самому краю карточки (даже при 3D-наклоне) всегда срабатывал */
+        .steam-card > *:not(.delete-photo-btn):not(.size-toggle-btn) {
+            pointer-events: none;
+        }
+
+        .steam-glare {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            opacity: 0;
+            z-index: 15;
+            transition: opacity 0.25s ease;
+            mix-blend-mode: overlay;
+        }
+
+        /* ==================== СЕТКА 6x3 В КАРТОЧКАХ И ЛИНЗА РАЗБЛЮРА ==================== */
+        .card-grid-6x3 {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            grid-template-rows: repeat(3, 1fr);
+            gap: 2px;
+            width: 100%;
+            height: 100%;
+        }
+
+        .card-grid-layer-blurred {
+            position: absolute;
+            inset: 0;
+            opacity: 0.24;
+            filter: blur(5px) grayscale(35%);
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+
+        .steam-card:hover .card-grid-layer-blurred,
+        .steam-card.tilt-active .card-grid-layer-blurred,
+        .steam-card.touch-lens-active .card-grid-layer-blurred {
+            opacity: 0.36;
+        }
+
+        .card-grid-layer-sharp {
+            position: absolute;
+            inset: 0;
+            opacity: 0;
+            filter: blur(0px) contrast(1.06);
+            pointer-events: none;
+            transition: opacity 0.25s ease;
+            -webkit-mask-image: radial-gradient(circle 82px at var(--lens-x, 50%) var(--lens-y, 50%), rgba(0,0,0,1) 0%, rgba(0,0,0,0.65) 55%, rgba(0,0,0,0) 100%);
+            mask-image: radial-gradient(circle 82px at var(--lens-x, 50%) var(--lens-y, 50%), rgba(0,0,0,1) 0%, rgba(0,0,0,0.65) 55%, rgba(0,0,0,0) 100%);
+        }
+
+        .steam-card:hover .card-grid-layer-sharp,
+        .steam-card.tilt-active .card-grid-layer-sharp,
+        .steam-card.touch-lens-active .card-grid-layer-sharp {
+            opacity: 0.95;
+        }
+
+        .grid-thumb-cell {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            background-color: #d6d6d2;
+            display: block;
+        }
+
+        /* ==================== РЕЖИМ КОНСТРУКТОРА ДЛЯ АВТОРА ==================== */
+        .edit-mode-active .sortable-photo-item {
+            cursor: grab;
+            outline: 2px dashed #111111;
+            outline-offset: 4px;
+        }
+
+        .edit-mode-active .sortable-photo-item:active {
+            cursor: grabbing;
+        }
+
+        .sortable-photo-item.dragging {
+            opacity: 0.35;
+            transform: scale(0.97);
+        }
+
+        .size-toggle-btn {
+            display: none;
+        }
+
+        .edit-mode-active .size-toggle-btn {
+            display: block;
+        }
+
+        .edit-mode-active [data-editable-text] {
+            outline: 1px dashed rgba(17, 17, 17, 0.45);
+            outline-offset: 6px;
+            background-color: rgba(255, 250, 205, 0.35);
+            cursor: text;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- АКТИВНЫЙ ЛАМЕЛЬНЫЙ ЗАТВОР FUJIFILM X-T4 -->
+    <div id="lamellar-shutter">
+        <div id="blade-1" class="xt4-blade"></div>
+        <div id="blade-2" class="xt4-blade"></div>
+        <div id="blade-3" class="xt4-blade"></div>
+
+        <svg id="xt4-mechanism-svg" aria-hidden="true">
+            <g id="xt4-linkage-group">
+                <g id="pin-group-1">
+                    <circle class="pin-outer" cx="0" cy="0" r="5.5" fill="#141414" stroke="#7A7A7A" stroke-width="1.8" />
+                    <circle class="pin-inner" cx="0" cy="0" r="2" fill="#9E9E9E" />
+                </g>
+                <g id="pin-group-2">
+                    <circle class="pin-outer" cx="0" cy="0" r="5.5" fill="#1C1C1C" stroke="#888888" stroke-width="1.8" />
+                    <circle class="pin-inner" cx="0" cy="0" r="2" fill="#B0B0B0" />
+                </g>
+                <g id="pin-group-3">
+                    <circle class="pin-outer" cx="0" cy="0" r="8" fill="#1E1E1E" stroke="#A8A8A8" stroke-width="2.2" />
+                    <circle class="pin-inner" cx="0" cy="0" r="3.2" fill="#DCDCDC" />
+                </g>
+            </g>
+        </svg>
+    </div>
+
+    <!-- ОВЕРЛЕЙ ПИКСЕЛИЗАЦИИ ВО ВРЕМЯ ХОДА ЗАТВОРА -->
+    <div id="shutter-pixel-grid-overlay"></div>
+
+    <!-- РЕЗЕРВНЫЙ КЛАССИЧЕСКИЙ ЗАТВОР -->
+    <div id="classic-shutter-backup"></div>
+
+    <!-- ПРОСМОТРЩИК ФОТО (LIGHTBOX НА ТЕЛЕФОНЕ И ПК) -->
+    <div id="mobile-photo-lightbox" onclick="handleLightboxBackdropClick(event)">
+        <button onclick="closeMobileLightbox(event)" class="fixed top-4 right-4 sm:top-6 sm:right-8 z-50 bg-white/90 hover:bg-white text-[#111] font-dot text-sm sm:text-base px-3.5 py-1.5 border border-black/30 shadow-md active:scale-95 transition-transform">
+            ✕ закрыть
+        </button>
+
+        <div id="mobile-lightbox-stage">
+            <img id="mobile-lightbox-img" src="" alt="" decoding="sync" draggable="false" oncontextmenu="return false;" />
+        </div>
+
+        <div class="fixed bottom-6 left-0 right-0 flex items-center justify-center gap-5 z-50 px-6" onclick="event.stopPropagation()">
+            <button onclick="stepMobileLightbox(-1)" class="bg-white/90 hover:bg-white text-[#111] font-dot text-lg px-5 py-2 border border-black/30 shadow-md active:scale-95 transition-transform select-none">
+                ←
+            </button>
+            <span id="mobile-lightbox-counter" class="font-dot text-xs sm:text-sm text-white bg-black/75 px-3.5 py-1.5 border border-white/20 select-none">
+                1 / 1
+            </span>
+            <button onclick="stepMobileLightbox(1)" class="bg-white/90 hover:bg-white text-[#111] font-dot text-lg px-5 py-2 border border-black/30 shadow-md active:scale-95 transition-transform select-none">
+                →
+            </button>
+        </div>
+    </div>
+
+    <!-- ПАНЕЛЬ КОНСТРУКТОРА ДЛЯ АВТОРА (вызывается по Shift + Option + E на Mac или ?edit=1) -->
+    <div id="admin-layout-bar" class="hidden fixed bottom-4 right-4 left-4 sm:left-auto z-50 bg-[#111] text-white font-dot text-xs px-4 py-3.5 shadow-2xl flex flex-col gap-3 border border-white/20 max-w-md">
+        <div class="flex items-center justify-between gap-4 border-b border-white/15 pb-2">
+            <span>конструктор (Shift+Option+E — скрыть)</span>
+            <button id="export-config-btn" onclick="exportPhotoOrder()" class="bg-white text-black px-3 py-1 hover:bg-neutral-200 transition-colors shrink-0">
+                скопировать конфиг (JSON)
+            </button>
+        </div>
+        <div class="flex flex-wrap gap-2">
+            <button onclick="randomizeCurrentGallery()" class="border border-white/40 px-3 py-1 hover:bg-white hover:text-black transition-colors">🎲 перемешать страницу</button>
+            <button onclick="undoDeletePhoto()" class="border border-white/40 px-3 py-1 hover:bg-white hover:text-black transition-colors">↩ вернуть фото</button>
+            <button onclick="resetSiteEdits()" class="border border-white/40 px-3 py-1 hover:bg-white hover:text-black transition-colors">сбросить правки</button>
+        </div>
+        <div class="text-[11px] text-neutral-300 leading-normal">
+            • перетаскивай фото мышкой (порядок един для ПК и телефона)<br>
+            • кликай прямо по любому тексту на сайте, чтобы переписать его
+        </div>
+        <div class="grid grid-cols-3 gap-2 pt-1 border-t border-white/15 text-[11px]">
+            <label class="flex flex-col gap-1">
+                <span>портрет X</span>
+                <input id="ctrl-me-x" type="range" min="-95" max="15" value="-61" oninput="updateMeCropFromSliders()" class="accent-white">
+            </label>
+            <label class="flex flex-col gap-1">
+                <span>портрет Y</span>
+                <input id="ctrl-me-y" type="range" min="-55" max="25" value="-2" oninput="updateMeCropFromSliders()" class="accent-white">
+            </label>
+            <label class="flex flex-col gap-1">
+                <span>масштаб</span>
+                <input id="ctrl-me-scale" type="range" min="100" max="185" value="174" oninput="updateMeCropFromSliders()" class="accent-white">
+            </label>
+        </div>
+    </div>
+
+    <!-- КОНТЕЙНЕР САЙТА -->
+    <div id="app-viewport">
+
+        <!-- ==================== СТРАНИЦА 1: ГЛАВНАЯ ==================== -->
+        <main id="page-home" class="page-view h-screen w-screen overflow-hidden bg-white flex flex-col sm:flex-row">
+            <div class="w-full flex-1 grid grid-cols-1 sm:grid-cols-12 h-full relative">
+                
+                <!-- Правая колонка с текстом и карточками -->
+                <div class="hero-content-col order-1 sm:order-2 col-span-1 sm:col-span-7 flex flex-col justify-center px-6 pt-12 pb-6 sm:px-10 lg:py-0 lg:px-20 z-20">
+                    
+                    <div class="hero-inner-box max-w-xl w-full mx-auto sm:mx-0">
+                        <h1 data-editable-text="heroTitle" class="hero-title-mobile hero-title-desktop font-dot text-2xl sm:text-3xl md:text-4xl lg:text-5xl leading-snug text-[#111] mb-8 sm:mb-12 lg:mb-16">привет!<div>я женя,<br class="hidden sm:inline"> фотограф<br>из<br class="hidden sm:inline"> звенигорода.</div></h1>
+
+                        <div>
+                            <div data-editable-text="heroSub" class="hero-sub-mobile hero-sub-desktop font-dot text-base sm:text-xl mb-5 sm:mb-8 text-[#111]">мои работы:</div>
+
+                            <div class="hero-cards-mobile hero-cards-desktop grid grid-cols-2 gap-4 sm:gap-8 steam-card-wrapper">
+                                
+                                <!-- Карточка: портреты -->
+                                <div id="card-portraits" onclick="switchPage('portraits')" class="steam-card meta-box cursor-pointer h-36 sm:h-44 lg:h-52 flex items-center justify-center bg-[#F4F4F2]">
+                                    <div class="card-grid-layer-blurred card-grid-6x3" data-grid-role="blurred"></div>
+                                    <div class="card-grid-layer-sharp card-grid-6x3" data-grid-role="sharp"></div>
+                                    <div class="steam-glare"></div>
+                                    <span class="relative z-20 font-dot text-lg sm:text-xl lg:text-2xl tracking-wider pointer-events-none bg-white/70 px-3 py-1 backdrop-blur-[2px]">
+                                        портреты
+                                    </span>
+                                </div>
+
+                                <!-- Карточка: репортаж -->
+                                <div id="card-reportage" onclick="switchPage('reportage')" class="steam-card meta-box cursor-pointer h-36 sm:h-44 lg:h-52 flex items-center justify-center bg-[#F4F4F2] sm:mt-12">
+                                    <div class="card-grid-layer-blurred card-grid-6x3" data-grid-role="blurred"></div>
+                                    <div class="card-grid-layer-sharp card-grid-6x3" data-grid-role="sharp"></div>
+                                    <div class="steam-glare"></div>
+                                    <span class="relative z-20 font-dot text-lg sm:text-xl lg:text-2xl tracking-wider pointer-events-none bg-white/70 px-3 py-1 backdrop-blur-[2px]">
+                                        репортаж
+                                    </span>
+                                </div>
+
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- Левая колонка: Автопортрет me.webp без режущей правой границы -->
+                <div class="hero-photo-col order-2 sm:order-1 col-span-1 sm:col-span-5 h-full bg-transparent select-none relative mt-auto">
+                    <div id="hero-me-transform-box">
+                        <img id="hero-me-photo" 
+                             src="photos/me.webp" 
+                             onerror="if(!this.dataset.triedJpg){this.dataset.triedJpg='1';this.src='photos/me.jpg';}else{this.style.display='none';document.getElementById('hero-me-fallback').style.display='block';}"
+                             alt="Женя" 
+                             draggable="false" oncontextmenu="return false;" />
+                        <svg id="hero-me-fallback" style="display:none;" viewBox="0 0 360 480" class="w-full h-full object-cover object-left-top" preserveAspectRatio="xMinYMin slice">
+                            <path d="M0,480 L0,90 C15,40 45,-25 115,-45 C185,-65 265,-25 295,45 C320,100 295,175 255,225 C230,255 215,285 225,320 C265,355 305,400 285,480 Z" fill="#111111"/>
+                            <path d="M62,88 C108,72 172,92 186,158 C196,216 164,284 116,294 C68,304 32,250 32,182 C32,132 45,98 62,88 Z" fill="#FFFFFF"/>
+                            <circle cx="102" cy="154" r="12" fill="#111111"/>
+                            <path d="M76,132 Q102,120 128,136" stroke="#111111" stroke-width="4.5" fill="none"/>
+                            <path d="M130,206 L152,210" stroke="#111111" stroke-width="4"/>
+                            <path d="M116,244 Q140,238 158,246" stroke="#111111" stroke-width="4.5" fill="none"/>
+                        </svg>
+                    </div>
+                </div>
+
+            </div>
+        </main>
+
+
+        <!-- ==================== СТРАНИЦА 2: ПОРТРЕТЫ ==================== -->
+        <main id="page-portraits" class="page-view hidden min-h-screen bg-white py-20 sm:py-28 px-2.5 sm:px-8 lg:px-14">
+            
+            <!-- Кнопка возврата на главную -->
+            <div class="fixed top-4 left-4 sm:top-8 sm:left-10 z-40">
+                <button onclick="switchPage('home')" class="font-dot text-sm sm:text-base bg-white/85 backdrop-blur-sm px-3.5 py-1.5 border border-black/20 hover:border-black transition-colors shadow-sm">
+                    ← назад
+                </button>
+            </div>
+
+            <section class="max-w-[1640px] w-full mx-auto steam-card-wrapper">
+                <div class="max-w-2xl mb-10 sm:mb-16 px-1.5 sm:px-0">
+                    <h2 data-editable-text="portraitsTitle" class="font-dot text-2xl sm:text-4xl mb-4">портреты</h2>
+                    <p data-editable-text="portraitsIntro" class="font-dot text-sm sm:text-lg text-neutral-600 leading-relaxed">самый любимый жанр, мне нравится сложность человеческого лица и пластики тела.<br><br>здесь собраны разные микро жанры - кампейнов до психологического портрета.<br><br>главное, что я хочу показать — как я работаю с образом и какие стилистические решения принимаю.</p>
+                </div>
+                <div id="portraits-sortable-grid" class="grid grid-cols-12 gap-x-2.5 gap-y-4 sm:gap-y-12 md:gap-x-8 lg:gap-x-10 items-start">
+                </div>
+            </section>
+
+        </main>
+
+
+        <!-- ==================== СТРАНИЦА 3: РЕПОРТАЖ ==================== -->
+        <main id="page-reportage" class="page-view hidden min-h-screen bg-white py-20 sm:py-28 px-2.5 sm:px-8 lg:px-14">
+            
+            <!-- Кнопка возврата на главную -->
+            <div class="fixed top-4 left-4 sm:top-8 sm:left-10 z-40">
+                <button onclick="switchPage('home')" class="font-dot text-sm sm:text-base bg-white/85 backdrop-blur-sm px-3.5 py-1.5 border border-black/20 hover:border-black transition-colors shadow-sm">
+                    ← назад
+                </button>
+            </div>
+
+            <section class="max-w-[1640px] w-full mx-auto steam-card-wrapper">
+                <div class="max-w-2xl mb-10 sm:mb-16 px-1.5 sm:px-0">
+                    <h2 data-editable-text="reportageTitle" class="font-dot text-2xl sm:text-4xl mb-4">репортаж</h2>
+                    <p data-editable-text="reportageIntro" class="font-dot text-sm sm:text-lg text-neutral-600 leading-relaxed">вызов для моего перфекционизма. я привык к тонкому индивидуальному подходу, а в репортаже вокруг — десятки незнакомых людей и полный хаос.<br><br>но именно через преодоление страха рождаются эти кадры: здесь видно, как я вылавливаю моменты и взаимодействую с людьми.</p>
+                </div>
+
+                <div id="reportage-sortable-grid" class="grid grid-cols-12 gap-x-2.5 gap-y-4 sm:gap-y-12 md:gap-x-8 lg:gap-x-10 items-start">
+                </div>
+            </section>
+
+        </main>
+
+    </div>
+
+    <!-- ФИКСИРОВАННАЯ ПИКСЕЛЬНАЯ ИКОНКА И ССЫЛКА TELEGRAM -->
+    <a id="tg-floating-btn"
+       href="https://t.me/ratnejal"
+       target="_blank"
+       rel="noopener noreferrer"
+       aria-label="Telegram @ratnejal"
+       class="fixed bottom-4 right-4 sm:bottom-5 sm:right-6 z-40 flex items-center gap-2.5 font-dot text-sm sm:text-base text-[#111] hover:opacity-70 transition-opacity select-none">
+        <svg viewBox="0 0 40 40" width="32" height="32" aria-hidden="true" class="pixel-crisp-svg shrink-0 block">
+            <path fill="#FFFFFF" d="M26,12h3v1h-3ZM24,13h5v1h-5ZM21,14h8v1h-8ZM19,15h10v1h-10ZM17,16h12v1h-12ZM14,17h8v1h-8ZM23,17h6v1h-6ZM12,18h8v1h-8ZM22,18h7v1h-7ZM10,19h9v1h-9ZM21,19h7v1h-7ZM8,20h9v1h-9ZM20,20h8v1h-8ZM8,21h8v1h-8ZM19,21h9v1h-9ZM11,22h3v1h-3ZM18,22h10v1h-10ZM17,23h11v1h-11ZM17,24h11v1h-11ZM18,25h9v1h-9ZM19,26h8v1h-8ZM21,27h6v1h-6ZM22,28h5v1h-5ZM24,29h2v1h-2Z" />
+            <path fill="#111111" d="M15,0h10v1h-10ZM12,1h16v1h-16ZM10,2h20v1h-20ZM9,3h22v1h-22ZM7,4h26v1h-26ZM6,5h28v1h-28ZM5,6h30v1h-30ZM4,7h32v1h-32ZM4,8h32v1h-32ZM3,9h34v1h-34ZM2,10h36v1h-36ZM2,11h36v1h-36ZM1,12h25v1h-25ZM29,12h10v1h-10ZM1,13h23v1h-23ZM29,13h10v1h-10ZM1,14h20v1h-20ZM29,14h10v1h-10ZM0,15h19v1h-19ZM29,15h10v1h-10ZM0,16h17v1h-17ZM29,16h11v1h-11ZM0,17h14v1h-14ZM22,17h1v1h-1ZM29,17h11v1h-11ZM0,18h12v1h-12ZM20,18h2v1h-2ZM29,18h11v1h-11ZM0,19h10v1h-10ZM19,19h2v1h-2ZM28,19h12v1h-12ZM0,20h8v1h-8ZM17,20h3v1h-3ZM28,20h12v1h-12ZM0,21h8v1h-8ZM16,21h3v1h-3ZM28,21h12v1h-12ZM0,22h11v1h-11ZM14,22h4v1h-4ZM28,22h12v1h-12ZM0,23h17v1h-17ZM28,23h12v1h-12ZM0,24h17v1h-17ZM28,24h11v1h-11ZM1,25h17v1h-17ZM27,25h12v1h-12ZM1,26h18v1h-18ZM27,26h12v1h-12ZM1,27h20v1h-20ZM27,27h12v1h-12ZM2,28h20v1h-20ZM27,28h11v1h-11ZM2,29h22v1h-22ZM26,29h12v1h-12ZM3,30h34v1h-34ZM4,31h32v1h-32ZM4,32h32v1h-32ZM5,33h30v1h-30ZM6,34h28v1h-28ZM7,35h26v1h-26ZM9,36h22v1h-22ZM10,37h20v1h-20ZM12,38h16v1h-16ZM16,39h8v1h-8Z" />
+        </svg>
+        <span>@ratnejal</span>
+    </a>
+
+    <!-- SVG-ФИЛЬТРЫ ДИСКРЕТИЗАЦИИ (ПИКСЕЛИЗАЦИЯ ЭКРАНА ПРИ ХОДЕ ЗАТВОРА И ЛАЙТБОКСЕ) -->
+    <svg width="0" height="0" style="position:absolute;pointer-events:none;" aria-hidden="true">
+        <defs>
+            <filter id="shutter-pixelate-filter" x="0%" y="0%" width="100%" height="100%" color-interpolation-filters="sRGB">
+                <feFlood id="px-flood" x="2" y="2" width="1" height="1" />
+                <feComposite id="px-tile-box" width="8" height="8" />
+                <feTile result="tileGrid" />
+                <feComposite in="SourceGraphic" in2="tileGrid" operator="in" />
+                <feMorphology id="px-dilate" operator="dilate" radius="4" />
+            </filter>
+            <filter id="mobile-lightbox-pixel-filter" x="0%" y="0%" width="100%" height="100%" color-interpolation-filters="sRGB">
+                <feFlood id="lb-px-flood" x="2" y="2" width="1" height="1" />
+                <feComposite id="lb-px-tile-box" width="4" height="4" />
+                <feTile result="lbGrid" />
+                <feComposite in="SourceGraphic" in2="lbGrid" operator="in" />
+                <feMorphology id="lb-px-dilate" operator="dilate" radius="2" />
+            </filter>
+        </defs>
+    </svg>
+
+
+    <!-- СКРИПТЫ ИНТЕРАКТИВНЫХ МЕХАНИК -->
+    <script>
+        /* ==========================================================================
+           НАСТРОЙКА ЗАТВОРА, ТЕКСТОВ И КАТАЛОГА ФОТОГРАФИЙ
+           ========================================================================== */
+        const SHUTTER_MODE = 'lamellar';
+        let currentPage = 'home';
+        let isShutterAnimating = false;
+
+        const PORTRAITS_FILES = [
+            'portreit_asciikit-2026-05-10T19-00-39',
+            'portreit_DSCF0022',
+            'portreit_DSCF2273',
+            'portreit_DSCF2279',
+            'portreit_DSCF2291',
+            'portreit_DSCF2292',
+            'portreit_DSCF2296',
+            'portreit_DSCF2321',
+            'portreit_DSCF2337',
+            'portreit_DSCF2346',
+            'portreit_DSCF2349',
+            'portreit_DSCF3937E',
+            'portreit_DSCF3965E',
+            'portreit_DSCF3973E',
+            'portreit_DSCF3982E',
+            'portreit_DSCF3985E2',
+            'portreit_DSCF3987E2',
+            'portreit_DSCF4009E2',
+            'portreit_DSCF4014E2',
+            'portreit_DSCF4017E2',
+            'portreit_DSCF4021E2',
+            'portreit_DSCF4027E2',
+            'portreit_DSCF4033E2',
+            'portreit_DSCF4036E2',
+            'portreit_DSCF4038E2',
+            'portreit_DSCF4042E2',
+            'portreit_DSCF4043E2',
+            'portreit_DSCF6799',
+            'portreit_DSCF6804',
+            'portreit_DSCF6827',
+            'portreit_DSCF6841',
+            'portreit_DSCF6852',
+            'portreit_DSCF6856',
+            'portreit_DSCF6858',
+            'portreit_DSCF6859',
+            'portreit_DSCF6896',
+            'portreit_DSCF6942',
+            'portreit_DSCF6949',
+            'portreit_DSCF8501e',
+            'portreit_DSCF8511e',
+            'portreit_DSCF8533e',
+            'portreit_DSCF8541e',
+            'portreit_DSCF8553e',
+            'portreit_DSCF9288',
+            'portreit_DSCF9320',
+            'portreit_DSCF9350',
+            'portreit_DSCF9369',
+            'portreit_DSCF9407',
+            'portreit_DSCF9454',
+            'portreit_DSCF9458',
+            'portreit_DSCF9471',
+            'portreit_DSCF9485',
+            'portreit_DSCF9561',
+            'portreit_DSCF9576',
+            'portreit_DSCF9597',
+            'portreit_DSCF9614',
+            'portreit_DSCF9624',
+            'portreit_DSCF9633',
+            'portreit_DSCF9669',
+            'portreit_DSCF9676',
+            'portreit_DSCF9685',
+            'portreit_DSCF9705',
+            'portreit_DSCF9723',
+            'portreit_DSCF9747',
+            'portreit_DSCF9768',
+            'portreit_DSCF9788',
+            'portreit_DSCF9816',
+            'portreit_DSCF9821',
+            'portreit_DSCF9822',
+            'portreit_DSCF9857',
+            'portreit_DSCF9884',
+            'portreit_DSCF9889',
+            'portreit_DSCF9890',
+            'portreit_DSCF9909',
+            'portreit_DSCF9920',
+            'portreit_DSCF9935',
+            'portreit_DSCF9966',
+            'portreit_DSCF9984',
+            'portreit_DSCF9985',
+            'portreit_DSCF9988',
+            'portreit_DSCF9989',
+            'portreit_INST_DSCF2758',
+            'portreit_INST_DSCF2768',
+            'portreit_INST_DSCF2782',
+            'portreit_INST_DSCF2797',
+            'portreit_INST_DSCF2819',
+            'portreit_INST_DSCF2835',
+            'portreit_INST_DSCF2842',
+            'portreit_INST_DSCF2844',
+            'portreit_INST_DSCF2846',
+            'portreit_INST_DSCF2874',
+            'portreit_INST_DSCF2885',
+            'portreit_INST_DSCF2894',
+            'portreit_INST_DSCF2896',
+            'portreit_INST_DSCF2911',
+            'portreit_INST_DSCF2912',
+            'portreit_INST_DSCF2916',
+            'portreit_INST_DSCF2920',
+            'portreit_INST_DSCF2936',
+            'portreit_INST_DSCF2976',
+            'portreit_INST_DSCF3044',
+            'portreit_INST_DSCF3051',
+            'portreit_INST_DSCF3054',
+            'portreit_INST_DSCF3062',
+            'portreit_INST_DSCF3080',
+            'portreit_INST_DSCF3102',
+            'portreit_INST_DSCF3107',
+            'portreit_INST_DSCF3109',
+            'portreit_INST_DSCF3144',
+            'portreit_INST_DSCF3155',
+            'portreit_INST_DSCF3174',
+            'portreit_INST_DSCF3182',
+            'portreit_INST_DSCF3223',
+            'portreit_INST_DSCF3261',
+            'portreit_INST_DSCF3270',
+            'portreit_INST_DSCF3271',
+            'portreit_INST_DSCF3276',
+            'portreit_INST_DSCF3278',
+            'portreit_INST_DSCF3295',
+            'portreit_INST_DSCF3299',
+            'portreit_INST_DSCF3310',
+            'portreit_INST_DSCF3367',
+            'portreit_INST_DSCF3378',
+            'portreit_INST_DSCF3379',
+            'portreit_Ретушь DSCF3916E2'
+        ];
+
+        const DOCUMENTAL_FILES = [
+            'documental_DSCF0127',
+            'documental_DSCF0159',
+            'documental_DSCF0167',
+            'documental_DSCF0277',
+            'documental_DSCF0289',
+            'documental_DSCF0294',
+            'documental_DSCF0295',
+            'documental_DSCF0527',
+            'documental_DSCF0571',
+            'documental_DSCF0573',
+            'documental_DSCF0583',
+            'documental_DSCF0613',
+            'documental_DSCF0672',
+            'documental_DSCF0810',
+            'documental_DSCF0878',
+            'documental_DSCF1133',
+            'documental_DSCF1180',
+            'documental_DSCF1218',
+            'documental_DSCF1229',
+            'documental_DSCF1250',
+            'documental_DSCF1854',
+            'documental_DSCF1870',
+            'documental_DSCF1889',
+            'documental_DSCF1893',
+            'documental_DSCF1911',
+            'documental_DSCF1914',
+            'documental_DSCF1917',
+            'documental_DSCF1923',
+            'documental_DSCF1934',
+            'documental_DSCF1942',
+            'documental_DSCF1946',
+            'documental_DSCF3708E',
+            'documental_DSCF3715E',
+            'documental_DSCF3720E',
+            'documental_DSCF3725E',
+            'documental_DSCF3729E',
+            'documental_DSCF3756E',
+            'documental_DSCF3765E',
+            'documental_DSCF3772E',
+            'documental_DSCF3776E',
+            'documental_DSCF3779E',
+            'documental_DSCF3780E',
+            'documental_DSCF3782E',
+            'documental_DSCF3811E',
+            'documental_DSCF3817E',
+            'documental_DSCF3855E',
+            'documental_DSCF3863E',
+            'documental_DSCF3897E',
+            'documental_DSCF4464E',
+            'documental_DSCF4484E',
+            'documental_DSCF4495E',
+            'documental_DSCF4513E',
+            'documental_DSCF4523E',
+            'documental_DSCF4567E',
+            'documental_DSCF4579E',
+            'documental_DSCF4584E',
+            'documental_DSCF4626E'
+        ];
+
+        const PHOTO_DIMS = {"me":{"w":3724,"h":5586},"pixel_DSCF9900":{"w":6240,"h":4160},"portreit_DSCF0022":{"w":6240,"h":4160},"portreit_DSCF2273":{"w":4091,"h":6137},"portreit_DSCF2279":{"w":4072,"h":4072},"portreit_DSCF2291":{"w":3807,"h":5710},"portreit_DSCF2292":{"w":4018,"h":6027},"portreit_DSCF2296":{"w":4160,"h":6240},"portreit_DSCF2321":{"w":3808,"h":5712},"portreit_DSCF2337":{"w":4160,"h":6240},"portreit_DSCF2346":{"w":4160,"h":6240},"portreit_DSCF2349":{"w":6240,"h":4160},"portreit_DSCF3937E":{"w":4160,"h":6240},"portreit_DSCF3965E":{"w":4160,"h":6240},"portreit_DSCF3973E":{"w":3576,"h":5364},"portreit_DSCF3982E":{"w":4101,"h":6152},"portreit_DSCF3985E2":{"w":4160,"h":6240},"portreit_DSCF3987E2":{"w":4160,"h":6240},"portreit_DSCF4009E2":{"w":4045,"h":6067},"portreit_DSCF4014E2":{"w":4160,"h":6240},"portreit_DSCF4017E2":{"w":4068,"h":6103},"portreit_DSCF4021E2":{"w":4004,"h":6006},"portreit_DSCF4027E2":{"w":3773,"h":5659},"portreit_DSCF4033E2":{"w":3809,"h":5713},"portreit_DSCF4036E2":{"w":4095,"h":6143},"portreit_DSCF4038E2":{"w":4155,"h":6232},"portreit_DSCF4042E2":{"w":4122,"h":6182},"portreit_DSCF4043E2":{"w":4160,"h":6240},"portreit_DSCF6799":{"w":4160,"h":6240},"portreit_DSCF6804":{"w":6127,"h":4085},"portreit_DSCF6827":{"w":4087,"h":6131},"portreit_DSCF6841":{"w":6240,"h":4160},"portreit_DSCF6852":{"w":4160,"h":6240},"portreit_DSCF6856":{"w":4160,"h":6240},"portreit_DSCF6858":{"w":4025,"h":6038},"portreit_DSCF6859":{"w":3940,"h":5910},"portreit_DSCF6896":{"w":6240,"h":4160},"portreit_DSCF6942":{"w":6240,"h":4160},"portreit_DSCF6949":{"w":6240,"h":4160},"portreit_DSCF8501e":{"w":6240,"h":4160},"portreit_DSCF8511e":{"w":1465,"h":2198},"portreit_DSCF8533e":{"w":4160,"h":6240},"portreit_DSCF8541e":{"w":6240,"h":4160},"portreit_DSCF8553e":{"w":2370,"h":3555},"portreit_DSCF9288":{"w":6240,"h":4160},"portreit_DSCF9320":{"w":6240,"h":4160},"portreit_DSCF9350":{"w":6240,"h":4160},"portreit_DSCF9369":{"w":6240,"h":4160},"portreit_DSCF9407":{"w":6240,"h":4160},"portreit_DSCF9454":{"w":6145,"h":4097},"portreit_DSCF9458":{"w":6181,"h":4121},"portreit_DSCF9471":{"w":6240,"h":4160},"portreit_DSCF9485":{"w":4160,"h":6240},"portreit_DSCF9561":{"w":6240,"h":4160},"portreit_DSCF9576":{"w":3299,"h":4948},"portreit_DSCF9597":{"w":4160,"h":6240},"portreit_DSCF9614":{"w":6240,"h":4160},"portreit_DSCF9624":{"w":6240,"h":4160},"portreit_DSCF9633":{"w":6240,"h":4160},"portreit_DSCF9669":{"w":3753,"h":5629},"portreit_DSCF9676":{"w":6240,"h":4160},"portreit_DSCF9685":{"w":6240,"h":4160},"portreit_DSCF9705":{"w":6240,"h":4160},"portreit_DSCF9723":{"w":4160,"h":6240},"portreit_DSCF9747":{"w":4160,"h":6240},"portreit_DSCF9768":{"w":6240,"h":4160},"portreit_DSCF9788":{"w":6240,"h":4160},"portreit_DSCF9816":{"w":6240,"h":4160},"portreit_DSCF9821":{"w":3743,"h":5615},"portreit_DSCF9822":{"w":4160,"h":6240},"portreit_DSCF9857":{"w":6240,"h":4160},"portreit_DSCF9884":{"w":6240,"h":4160},"portreit_DSCF9889":{"w":6240,"h":4160},"portreit_DSCF9890":{"w":6240,"h":4160},"portreit_DSCF9909":{"w":3612,"h":5418},"portreit_DSCF9920":{"w":6240,"h":4160},"portreit_DSCF9935":{"w":4160,"h":6240},"portreit_DSCF9966":{"w":6240,"h":4160},"portreit_DSCF9984":{"w":3686,"h":2458},"portreit_DSCF9985":{"w":4160,"h":6240},"portreit_DSCF9988":{"w":4160,"h":6240},"portreit_DSCF9989":{"w":6240,"h":4160},"portreit_INST_DSCF2758":{"w":2560,"h":1707},"portreit_INST_DSCF2768":{"w":2560,"h":1707},"portreit_INST_DSCF2782":{"w":1707,"h":2560},"portreit_INST_DSCF2797":{"w":2560,"h":1707},"portreit_INST_DSCF2819":{"w":2560,"h":2560},"portreit_INST_DSCF2835":{"w":1707,"h":2560},"portreit_INST_DSCF2842":{"w":1707,"h":2560},"portreit_INST_DSCF2844":{"w":2560,"h":1707},"portreit_INST_DSCF2846":{"w":2560,"h":1707},"portreit_INST_DSCF2874":{"w":2560,"h":1707},"portreit_INST_DSCF2885":{"w":1707,"h":2560},"portreit_INST_DSCF2894":{"w":2560,"h":1707},"portreit_INST_DSCF2896":{"w":2560,"h":1707},"portreit_INST_DSCF2911":{"w":2560,"h":1707},"portreit_INST_DSCF2912":{"w":2560,"h":1707},"portreit_INST_DSCF2916":{"w":2560,"h":1707},"portreit_INST_DSCF2920":{"w":1707,"h":2560},"portreit_INST_DSCF2936":{"w":2560,"h":1707},"portreit_INST_DSCF2976":{"w":2560,"h":1707},"portreit_INST_DSCF3044":{"w":1707,"h":2560},"portreit_INST_DSCF3051":{"w":2560,"h":1707},"portreit_INST_DSCF3054":{"w":1707,"h":2560},"portreit_INST_DSCF3062":{"w":1707,"h":2560},"portreit_INST_DSCF3080":{"w":2560,"h":1707},"portreit_INST_DSCF3102":{"w":2560,"h":1707},"portreit_INST_DSCF3107":{"w":1707,"h":2560},"portreit_INST_DSCF3109":{"w":1707,"h":2560},"portreit_INST_DSCF3144":{"w":1707,"h":2560},"portreit_INST_DSCF3155":{"w":1707,"h":2560},"portreit_INST_DSCF3174":{"w":1707,"h":2560},"portreit_INST_DSCF3182":{"w":2560,"h":1707},"portreit_INST_DSCF3223":{"w":1707,"h":2560},"portreit_INST_DSCF3261":{"w":2560,"h":1707},"portreit_INST_DSCF3270":{"w":2560,"h":1707},"portreit_INST_DSCF3271":{"w":2560,"h":1707},"portreit_INST_DSCF3276":{"w":1707,"h":2560},"portreit_INST_DSCF3278":{"w":2560,"h":1707},"portreit_INST_DSCF3295":{"w":1707,"h":2560},"portreit_INST_DSCF3299":{"w":1707,"h":2560},"portreit_INST_DSCF3310":{"w":2560,"h":1707},"portreit_INST_DSCF3367":{"w":2560,"h":1707},"portreit_INST_DSCF3378":{"w":1707,"h":2560},"portreit_INST_DSCF3379":{"w":1707,"h":2560},"portreit_Ретушь DSCF3916E2":{"w":4619,"h":3079},"portreit_asciikit-2026-05-10T19-00-39":{"w":3240,"h":2160},"documental_DSCF0127":{"w":6240,"h":4160},"documental_DSCF0159":{"w":4160,"h":6240},"documental_DSCF0167":{"w":6240,"h":4160},"documental_DSCF0277":{"w":6240,"h":4160},"documental_DSCF0289":{"w":6240,"h":4160},"documental_DSCF0294":{"w":3480,"h":5220},"documental_DSCF0295":{"w":3499,"h":5248},"documental_DSCF0527":{"w":1954,"h":1303},"documental_DSCF0571":{"w":3428,"h":2286},"documental_DSCF0573":{"w":2303,"h":3455},"documental_DSCF0583":{"w":1808,"h":1205},"documental_DSCF0613":{"w":1869,"h":1246},"documental_DSCF0672":{"w":3851,"h":2568},"documental_DSCF0810":{"w":4312,"h":2875},"documental_DSCF0878":{"w":5510,"h":3674},"documental_DSCF1133":{"w":6240,"h":4160},"documental_DSCF1180":{"w":3624,"h":5436},"documental_DSCF1218":{"w":3872,"h":5807},"documental_DSCF1229":{"w":4010,"h":2674},"documental_DSCF1250":{"w":3907,"h":2605},"documental_DSCF1854":{"w":1714,"h":2571},"documental_DSCF1870":{"w":2745,"h":1830},"documental_DSCF1889":{"w":4160,"h":6240},"documental_DSCF1893":{"w":5895,"h":3930},"documental_DSCF1911":{"w":3999,"h":5999},"documental_DSCF1914":{"w":6240,"h":4160},"documental_DSCF1917":{"w":4160,"h":6240},"documental_DSCF1923":{"w":6240,"h":4160},"documental_DSCF1934":{"w":6240,"h":4160},"documental_DSCF1942":{"w":4160,"h":6240},"documental_DSCF1946":{"w":4160,"h":6240},"documental_DSCF3708E":{"w":4160,"h":6240},"documental_DSCF3715E":{"w":6240,"h":4160},"documental_DSCF3720E":{"w":6240,"h":4160},"documental_DSCF3725E":{"w":6240,"h":4160},"documental_DSCF3729E":{"w":6240,"h":4160},"documental_DSCF3756E":{"w":6240,"h":4160},"documental_DSCF3765E":{"w":4061,"h":2707},"documental_DSCF3772E":{"w":6240,"h":4160},"documental_DSCF3776E":{"w":4160,"h":6240},"documental_DSCF3779E":{"w":4160,"h":6240},"documental_DSCF3800E":{"w":4160,"h":6240},"documental_DSCF3811E":{"w":2554,"h":3831},"documental_DSCF3817E":{"w":4160,"h":6240},"documental_DSCF3855E":{"w":4160,"h":6240},"documental_DSCF3863E":{"w":3231,"h":4846},"documental_DSCF3897E":{"w":1643,"h":2464},"documental_DSCF4464E":{"w":5973,"h":3982},"documental_DSCF4484E":{"w":4160,"h":6240},"documental_DSCF4495E":{"w":6240,"h":4160},"documental_DSCF4513E":{"w":1567,"h":2350},"documental_DSCF4523E":{"w":4160,"h":6240},"documental_DSCF4567E":{"w":3197,"h":4796},"documental_DSCF4579E":{"w":2213,"h":3319},"documental_DSCF4584E":{"w":5668,"h":3779},"documental_DSCF4626E":{"w":6240,"h":4160}};
+
+        /* ==========================================================================
+           ЗАВОДСКАЯ КОНФИГУРАЦИЯ (ТОЧНО ИЗ ТВОЕГО КОНФИГА: -61%, -2%, 1.74)
+           ========================================================================== */
+        const SAVED_SITE_CONFIG = {
+            "meCrop": {
+                "x": "-61%",
+                "y": "-2%",
+                "scale": "1.74"
+            },
+            "texts": {
+                "heroTitle": "привет!<div>я женя,<br class=\"hidden sm:inline\"> фотограф<br>из<br class=\"hidden sm:inline\"> звенигорода.</div>",
+                "heroSub": "мои работы:",
+                "portraitsTitle": "портреты",
+                "portraitsIntro": "самый любимый жанр, мне нравится сложность человеческого лица и пластики тела.<br><br>здесь собраны разные микро жанры - кампейнов до психологического портрета.<br><br>главное, что я хочу показать — как я работаю с образом и какие стилистические решения принимаю.",
+                "reportageTitle": "репортаж",
+                "reportageIntro": "вызов для моего перфекционизма. я привык к тонкому индивидуальному подходу, а в репортаже вокруг — десятки незнакомых людей и полный хаос.<br><br>но именно через преодоление страха рождаются эти кадры: здесь видно, как я вылавливаю моменты и взаимодействую с людьми."
+            },
+            "portraits": [
+                { "id": "portreit_asciikit-2026-05-10T19-00-39", "colSpan": "5" },
+                { "id": "portreit_DSCF9890", "colSpan": "7" },
+                { "id": "portreit_INST_DSCF2916", "colSpan": "7" },
+                { "id": "portreit_INST_DSCF3367", "colSpan": "5" },
+                { "id": "portreit_DSCF9669", "colSpan": "5" },
+                { "id": "portreit_DSCF9788", "colSpan": "7" },
+                { "id": "portreit_INST_DSCF3271", "colSpan": "6" },
+                { "id": "portreit_DSCF4043E2", "colSpan": "4" },
+                { "id": "portreit_INST_DSCF3062", "colSpan": "8" },
+                { "id": "portreit_DSCF9685", "colSpan": "7" },
+                { "id": "portreit_DSCF6858", "colSpan": "4" },
+                { "id": "portreit_DSCF6841", "colSpan": "7" },
+                { "id": "portreit_DSCF6852", "colSpan": "5" },
+                { "id": "portreit_INST_DSCF3182", "colSpan": "4" },
+                { "id": "portreit_DSCF2296", "colSpan": "5" },
+                { "id": "portreit_INST_DSCF2844", "colSpan": "7" },
+                { "id": "portreit_DSCF9822", "colSpan": "5" },
+                { "id": "portreit_INST_DSCF3270", "colSpan": "7" },
+                { "id": "portreit_DSCF6804", "colSpan": "12" },
+                { "id": "portreit_INST_DSCF3107", "colSpan": "6" },
+                { "id": "portreit_DSCF6799", "colSpan": "6" },
+                { "id": "portreit_DSCF9676", "colSpan": "5" },
+                { "id": "portreit_INST_DSCF3051", "colSpan": "7" },
+                { "id": "portreit_DSCF4014E2", "colSpan": "6" },
+                { "id": "portreit_INST_DSCF3054", "colSpan": "6" },
+                { "id": "portreit_DSCF9614", "colSpan": "7" },
+                { "id": "portreit_INST_DSCF3223", "colSpan": "5" },
+                { "id": "portreit_DSCF8501e", "colSpan": "7" },
+                { "id": "portreit_DSCF4017E2", "colSpan": "5" },
+                { "id": "portreit_DSCF9454", "colSpan": "12" },
+                { "id": "portreit_DSCF3982E", "colSpan": "6" },
+                { "id": "portreit_DSCF8553e", "colSpan": "6" },
+                { "id": "portreit_DSCF4021E2", "colSpan": "5" },
+                { "id": "portreit_DSCF6949", "colSpan": "7" },
+                { "id": "portreit_INST_DSCF2920", "colSpan": "5" },
+                { "id": "portreit_DSCF9884", "colSpan": "7" },
+                { "id": "portreit_DSCF4027E2", "colSpan": "4" },
+                { "id": "portreit_DSCF2279", "colSpan": "6" },
+                { "id": "portreit_INST_DSCF2758", "colSpan": "7" },
+                { "id": "portreit_DSCF6827", "colSpan": "4" },
+                { "id": "portreit_INST_DSCF3310", "colSpan": "12" },
+                { "id": "portreit_DSCF2321", "colSpan": "5" },
+                { "id": "portreit_DSCF9597", "colSpan": "5" },
+                { "id": "portreit_INST_DSCF3378", "colSpan": "7" },
+                { "id": "portreit_DSCF9350", "colSpan": "6" },
+                { "id": "portreit_DSCF6896", "colSpan": "6" },
+                { "id": "portreit_INST_DSCF3155", "colSpan": "5" },
+                { "id": "portreit_DSCF8541e", "colSpan": "7" },
+                { "id": "portreit_DSCF9920", "colSpan": "7" },
+                { "id": "portreit_DSCF8533e", "colSpan": "5" },
+                { "id": "portreit_DSCF6856", "colSpan": "5" },
+                { "id": "portreit_INST_DSCF3044", "colSpan": "7" },
+                { "id": "portreit_DSCF9988", "colSpan": "6" },
+                { "id": "portreit_INST_DSCF3276", "colSpan": "6" },
+                { "id": "portreit_DSCF9369", "colSpan": "7" },
+                { "id": "portreit_DSCF9288", "colSpan": "5" },
+                { "id": "portreit_DSCF2337", "colSpan": "5" },
+                { "id": "portreit_INST_DSCF2896", "colSpan": "7" },
+                { "id": "portreit_DSCF9966", "colSpan": "5" },
+                { "id": "portreit_DSCF9816", "colSpan": "7" },
+                { "id": "portreit_DSCF9935", "colSpan": "4" },
+                { "id": "portreit_INST_DSCF2894", "colSpan": "6" },
+                { "id": "portreit_INST_DSCF2912", "colSpan": "6" },
+                { "id": "portreit_DSCF9705", "colSpan": "6" },
+                { "id": "portreit_INST_DSCF3299", "colSpan": "4" },
+                { "id": "portreit_INST_DSCF2846", "colSpan": "6" },
+                { "id": "portreit_DSCF8511e", "colSpan": "4" },
+                { "id": "portreit_DSCF2349", "colSpan": "7" },
+                { "id": "portreit_DSCF9485", "colSpan": "6" },
+                { "id": "portreit_DSCF9576", "colSpan": "6" },
+                { "id": "portreit_INST_DSCF2835", "colSpan": "7" },
+                { "id": "portreit_INST_DSCF3144", "colSpan": "5" },
+                { "id": "portreit_INST_DSCF2911", "colSpan": "7" },
+                { "id": "portreit_DSCF6859", "colSpan": "5" },
+                { "id": "portreit_INST_DSCF3278", "colSpan": "12" },
+                { "id": "portreit_INST_DSCF2885", "colSpan": "5" },
+                { "id": "portreit_DSCF9320", "colSpan": "7" },
+                { "id": "portreit_DSCF4033E2", "colSpan": "5" },
+                { "id": "portreit_DSCF3985E2", "colSpan": "5" },
+                { "id": "portreit_INST_DSCF2936", "colSpan": "7" },
+                { "id": "portreit_DSCF4009E2", "colSpan": "5" },
+                { "id": "portreit_INST_DSCF2819", "colSpan": "7" },
+                { "id": "portreit_INST_DSCF3109", "colSpan": "4" },
+                { "id": "portreit_INST_DSCF3174", "colSpan": "4" },
+                { "id": "portreit_DSCF3973E", "colSpan": "4" },
+                { "id": "portreit_INST_DSCF3080", "colSpan": "12" },
+                { "id": "portreit_DSCF9768", "colSpan": "7" },
+                { "id": "portreit_DSCF2273", "colSpan": "5" },
+                { "id": "portreit_INST_DSCF3379", "colSpan": "5" },
+                { "id": "portreit_Ретушь DSCF3916E2", "colSpan": "7" },
+                { "id": "portreit_INST_DSCF2768", "colSpan": "7" },
+                { "id": "portreit_DSCF3937E", "colSpan": "5" },
+                { "id": "portreit_DSCF0022", "colSpan": "7" },
+                { "id": "portreit_INST_DSCF3295", "colSpan": "5" },
+                { "id": "portreit_DSCF3965E", "colSpan": "6" },
+                { "id": "portreit_DSCF4036E2", "colSpan": "6" },
+                { "id": "portreit_DSCF6942", "colSpan": "7" },
+                { "id": "portreit_DSCF9909", "colSpan": "4" },
+                { "id": "portreit_INST_DSCF3102", "colSpan": "7" },
+                { "id": "portreit_DSCF9407", "colSpan": "5" },
+                { "id": "portreit_INST_DSCF3261", "colSpan": "6" },
+                { "id": "portreit_DSCF9747", "colSpan": "6" }
+            ],
+            "reportage": [
+                { "id": "documental_DSCF0613", "colSpan": "7" },
+                { "id": "documental_DSCF3897E", "colSpan": "5" },
+                { "id": "documental_DSCF1946", "colSpan": "4" },
+                { "id": "documental_DSCF0289", "colSpan": "8" },
+                { "id": "documental_DSCF4579E", "colSpan": "7" },
+                { "id": "documental_DSCF0295", "colSpan": "4" },
+                { "id": "documental_DSCF1917", "colSpan": "4" },
+                { "id": "documental_DSCF0571", "colSpan": "6" },
+                { "id": "documental_DSCF1870", "colSpan": "12" },
+                { "id": "documental_DSCF4513E", "colSpan": "4" },
+                { "id": "documental_DSCF0573", "colSpan": "5" },
+                { "id": "documental_DSCF0810", "colSpan": "6" },
+                { "id": "documental_DSCF1923", "colSpan": "6" },
+                { "id": "documental_DSCF1250", "colSpan": "4" },
+                { "id": "documental_DSCF0159", "colSpan": "5" },
+                { "id": "documental_DSCF0527", "colSpan": "5" },
+                { "id": "documental_DSCF1133", "colSpan": "7" },
+                { "id": "documental_DSCF0583", "colSpan": "7" },
+                { "id": "documental_DSCF3729E", "colSpan": "4" },
+                { "id": "documental_DSCF4464E", "colSpan": "12" },
+                { "id": "documental_DSCF3765E", "colSpan": "6" },
+                { "id": "documental_DSCF1934", "colSpan": "6" },
+                { "id": "documental_DSCF3855E", "colSpan": "5" },
+                { "id": "documental_DSCF4495E", "colSpan": "6" },
+                { "id": "documental_DSCF4626E", "colSpan": "7" },
+                { "id": "documental_DSCF1914", "colSpan": "6" },
+                { "id": "documental_DSCF4484E", "colSpan": "4" },
+                { "id": "documental_DSCF1180", "colSpan": "5" },
+                { "id": "documental_DSCF3715E", "colSpan": "7" },
+                { "id": "documental_DSCF4523E", "colSpan": "5" },
+                { "id": "documental_DSCF4584E", "colSpan": "7" },
+                { "id": "documental_DSCF1942", "colSpan": "5" },
+                { "id": "documental_DSCF0878", "colSpan": "7" },
+                { "id": "documental_DSCF0672", "colSpan": "7" },
+                { "id": "documental_DSCF3811E", "colSpan": "5" },
+                { "id": "documental_DSCF3720E", "colSpan": "12" },
+                { "id": "documental_DSCF1893", "colSpan": "7" },
+                { "id": "documental_DSCF0294", "colSpan": "5" }
+            ]
+        };
+
+        const PORTRAITS_THUMBS = SAVED_SITE_CONFIG.portraits.map(item => 'photos/thumbs/' + item.id + '.webp');
+        const DOCUMENTAL_THUMBS = SAVED_SITE_CONFIG.reportage.map(item => 'documental/thumbs/' + item.id + '.webp');
+
+        function isMobileViewport() {
+            return window.innerWidth < 640;
+        }
+
+        /* ==========================================================================
+           УМНАЯ 3-ЭТАПНАЯ ПОДГРУЗКА ФОТО (LITE -> STANDARD -> HIGH)
+           ========================================================================== */
+        let isFastConnection = true;
+        let desktopStdObserver = null;
+        let lightboxHighTimer = null;
+
+        function detectNetworkQuality() {
+            const conn = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+            if (conn) {
+                if (conn.saveData || conn.effectiveType === 'slow-2g' || conn.effectiveType === '2g') {
+                    isFastConnection = false;
+                    return;
+                }
+            }
+            isFastConnection = true;
+        }
+
+        // Переключает карточку с lite на обычную версию (Standard) с поддержкой очереди колбэков
+        function upgradeCardToStandardRes(cardEl, onComplete) {
+            if (!cardEl) return;
+            const img = cardEl.querySelector('img');
+            if (!img) return;
+            const stdSrc = img.dataset.stdSrc;
+            if (!stdSrc || img.dataset.stdUpgraded === '1') {
+                if (onComplete) onComplete(stdSrc || img.src);
+                return;
+            }
+
+            if (!cardEl._stdCallbacks) cardEl._stdCallbacks = [];
+            if (onComplete) cardEl._stdCallbacks.push(onComplete);
+
+            if (img.dataset.stdUpgrading === '1') {
+                return;
+            }
+            img.dataset.stdUpgrading = '1';
+
+            const loader = new Image();
+            loader.decoding = 'async';
+            loader.onload = () => {
+                img.src = stdSrc;
+                img.dataset.stdUpgraded = '1';
+                delete img.dataset.stdUpgrading;
+                const cbs = cardEl._stdCallbacks || [];
+                cardEl._stdCallbacks = [];
+                cbs.forEach(cb => cb(stdSrc));
+            };
+            loader.onerror = () => {
+                delete img.dataset.stdUpgrading;
+                const cbs = cardEl._stdCallbacks || [];
+                cardEl._stdCallbacks = [];
+                cbs.forEach(cb => cb(img.src));
+            };
+            loader.src = stdSrc;
+        }
+
+        // Подгружает третью ступень (супер-качество из папки high/) для открытого Lightbox
+        function loadHighResForLightbox(cardEl, onComplete) {
+            if (!cardEl) return;
+            const img = cardEl.querySelector('img');
+            if (!img) return;
+            const highSrc = img.dataset.highSrc;
+            if (!highSrc) return;
+
+            if (img.dataset.highLoaded === '1') {
+                if (onComplete) onComplete(highSrc);
+                return;
+            }
+
+            if (!cardEl._highCallbacks) cardEl._highCallbacks = [];
+            if (onComplete) cardEl._highCallbacks.push(onComplete);
+
+            if (img.dataset.highLoading === '1') {
+                return;
+            }
+            img.dataset.highLoading = '1';
+
+            const hiLoader = new Image();
+            hiLoader.decoding = 'async';
+            hiLoader.onload = () => {
+                img.dataset.highLoaded = '1';
+                delete img.dataset.highLoading;
+                const cbs = cardEl._highCallbacks || [];
+                cardEl._highCallbacks = [];
+                cbs.forEach(cb => cb(highSrc));
+            };
+            hiLoader.onerror = () => {
+                delete img.dataset.highLoading;
+                cardEl._highCallbacks = [];
+            };
+            hiLoader.src = highSrc;
+        }
+
+        // На ноутбуках и ПК по мере скролла галереи сразу подгружает обычные (standard) версии вместо lite
+        function initDesktopScrollStandardUpgrade() {
+            if (desktopStdObserver) desktopStdObserver.disconnect();
+            if (isMobileViewport() || !('IntersectionObserver' in window)) return;
+
+            desktopStdObserver = new IntersectionObserver((entries, obs) => {
+                if (!isFastConnection) return;
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        upgradeCardToStandardRes(entry.target);
+                        obs.unobserve(entry.target);
+                    }
+                });
+            }, {
+                rootMargin: '500px 0px'
+            });
+
+            document.querySelectorAll('.sortable-photo-item').forEach(card => {
+                desktopStdObserver.observe(card);
+            });
+        }
+
+        /* ==========================================================================
+           ТАКТИЛЬНЫЙ ОТКЛИК (HAPTIC FEEDBACK — КОРОТКИЙ ПОСТУКИВАЮЩИЙ ИМПУЛЬС)
+           ========================================================================== */
+        let hapticCheckbox = null;
+
+        function initHapticEngine() {
+            const label = document.createElement('label');
+            label.setAttribute('aria-hidden', 'true');
+            label.style.cssText = 'position:fixed;left:-9999px;top:-9999px;width:1px;height:1px;opacity:0;pointer-events:none;overflow:hidden;';
+            const input = document.createElement('input');
+            input.type = 'checkbox';
+            input.setAttribute('switch', '');
+            label.appendChild(input);
+            document.body.appendChild(label);
+            hapticCheckbox = input;
+        }
+
+        function triggerHaptic(type = 'light') {
+            try {
+                if (navigator.vibrate) {
+                    navigator.vibrate(type === 'medium' ? 12 : 7);
+                } else if (hapticCheckbox && isMobileViewport()) {
+                    hapticCheckbox.click();
+                }
+            } catch (_) {}
+        }
+
+        /* ==========================================================================
+           0. ГЕНЕРАЦИЯ СЕТКИ 6x3 РАНДОМНЫХ ФОТО В КАРТОЧКАХ РАЗДЕЛОВ + ЛИНЗА РАЗБЛЮРА
+           ========================================================================== */
+        function populateCardGrid6x3(cardId, fileList) {
+            const card = document.getElementById(cardId);
+            if (!card) return;
+
+            const blurredLayer = card.querySelector('[data-grid-role="blurred"]');
+            const sharpLayer = card.querySelector('[data-grid-role="sharp"]');
+            if (!blurredLayer || !sharpLayer) return;
+
+            const shuffled = [...fileList].sort(() => Math.random() - 0.5);
+            const selected18 = Array.from({ length: 18 }, (_, idx) => shuffled[idx % shuffled.length]);
+
+            blurredLayer.innerHTML = '';
+            sharpLayer.innerHTML = '';
+
+            selected18.forEach((src, i) => {
+                const shade = 140 + ((i * 23) % 85);
+                const innerShade = 45 + ((i * 37) % 90);
+                const cellHTML = `
+                    <div class="w-full h-full overflow-hidden relative flex items-center justify-center" style="background-color: rgb(${shade},${shade},${shade - 3});">
+                        <div style="width: 58%; height: 68%; background: rgb(${innerShade},${innerShade},${innerShade}); opacity: 0.45;"></div>
+                        <img src="${src}" onerror="this.style.display='none'" draggable="false" oncontextmenu="return false;" class="grid-thumb-cell absolute inset-0" alt="" loading="lazy" />
+                    </div>
+                `;
+                blurredLayer.insertAdjacentHTML('beforeend', cellHTML);
+                sharpLayer.insertAdjacentHTML('beforeend', cellHTML);
+            });
+        }
+
+        /* ==========================================================================
+           1. ЭФФЕКТ КАРТОЧЕК STEAM + СФЕРА РАЗБЛЮРА
+           ========================================================================== */
+        function applyCardTiltAndLens(card, clientX, clientY) {
+            const glare = card.querySelector('.steam-glare');
+            const rect = card._restRect || card.getBoundingClientRect();
+            const x = clientX - rect.left;
+            const y = clientY - rect.top;
+
+            const centerX = rect.width / 2;
+            const centerY = rect.height / 2;
+
+            const maxTilt = window.innerWidth < 768 ? 7 : 12;
+            const rotateX = ((y - centerY) / Math.max(centerY, 1)) * -maxTilt;
+            const rotateY = ((x - centerX) / Math.max(centerX, 1)) * maxTilt;
+
+            card.style.transform = `perspective(1000px) rotateX(${rotateX.toFixed(2)}deg) rotateY(${rotateY.toFixed(2)}deg) scale3d(1.025, 1.025, 1.025) translateY(-3px)`;
+            card.style.boxShadow = `${-rotateY * 1.1}px ${rotateX * 1.1 + 14}px 28px rgba(0,0,0,0.14)`;
+            card.classList.add('tilt-active');
+
+            card.style.setProperty('--lens-x', `${x.toFixed(1)}px`);
+            card.style.setProperty('--lens-y', `${y.toFixed(1)}px`);
+
+            if (glare) {
+                const percentX = (x / rect.width) * 100;
+                const percentY = (y / rect.height) * 100;
+                glare.style.opacity = '1';
+                glare.style.background = `radial-gradient(circle at ${percentX}% ${percentY}%, rgba(255,255,255,0.55) 0%, rgba(255,255,255,0) 65%)`;
+            }
+        }
+
+        function resetCardTilt(card) {
+            const glare = card.querySelector('.steam-glare');
+            card.classList.remove('touch-lens-active', 'tilt-active');
+            card.style.transform = '';
+            card.style.boxShadow = '';
+            if (glare) {
+                glare.style.opacity = '0';
+            }
+        }
+
+        function initSteamCards() {
+            let hoveredCard = null;
+            const getVisibleCards = () => {
+                const activePageEl = document.getElementById(`page-${currentPage}`);
+                return activePageEl ? [...activePageEl.querySelectorAll('.steam-card')] : [];
+            };
+
+            const inside = (r, x, y, margin) =>
+                r.width > 0 && r.height > 0 &&
+                x >= r.left - margin && x <= r.right + margin &&
+                y >= r.top - margin && y <= r.bottom + margin;
+
+            const findCardUnderCursor = (clientX, clientY) => {
+                if (hoveredCard && document.body.contains(hoveredCard)) {
+                    const r = hoveredCard._restRect;
+                    if (r && inside(r, clientX, clientY, 22)) {
+                        return hoveredCard;
+                    }
+                    resetCardTilt(hoveredCard);
+                    hoveredCard = null;
+                }
+
+                for (const card of getVisibleCards()) {
+                    const r = card.getBoundingClientRect();
+                    if (inside(r, clientX, clientY, 0)) {
+                        card._restRect = r;
+                        hoveredCard = card;
+                        return card;
+                    }
+                }
+                return null;
+            };
+
+            window.addEventListener('mousemove', (e) => {
+                if (isShutterAnimating || isEditMode || mobileLightboxOpen || isMobileViewport()) {
+                    if (hoveredCard) {
+                        resetCardTilt(hoveredCard);
+                        hoveredCard = null;
+                    }
+                    return;
+                }
+                const target = findCardUnderCursor(e.clientX, e.clientY);
+                if (target) applyCardTiltAndLens(target, e.clientX, e.clientY);
+            }, { passive: true });
+
+            const remeasureRestRects = () => {
+                getVisibleCards().forEach(card => {
+                    if (card === hoveredCard && card._restRect) {
+                        const old = card._restRect;
+                        const fresh = card.getBoundingClientRect();
+                        card._restRect = {
+                            left: fresh.left,
+                            top: fresh.top,
+                            width: old.width,
+                            height: old.height,
+                            right: fresh.left + old.width,
+                            bottom: fresh.top + old.height
+                        };
+                    } else if (!card.style.transform) {
+                        card._restRect = card.getBoundingClientRect();
+                    }
+                });
+            };
+
+            window.addEventListener('resize', remeasureRestRects);
+            window.addEventListener('scroll', remeasureRestRects, { passive: true });
+            window.remeasureTiltRects = remeasureRestRects;
+            window.getCurrentHoveredCard = () => hoveredCard;
+
+            document.addEventListener('touchstart', (e) => {
+                if (isEditMode) return;
+                const card = e.target.closest('.steam-card');
+                if (!card) return;
+                if (isMobileViewport() && card.classList.contains('sortable-photo-item')) return;
+                if (e.touches[0]) {
+                    card.classList.add('touch-lens-active');
+                    card._restRect = card.getBoundingClientRect();
+                    applyCardTiltAndLens(card, e.touches[0].clientX, e.touches[0].clientY);
+                }
+            }, { passive: true });
+
+            document.addEventListener('touchmove', (e) => {
+                if (isEditMode) return;
+                const card = e.target.closest('.steam-card');
+                if (!card) return;
+                if (isMobileViewport() && card.classList.contains('sortable-photo-item')) return;
+                if (e.touches[0]) {
+                    applyCardTiltAndLens(card, e.touches[0].clientX, e.touches[0].clientY);
+                }
+            }, { passive: true });
+
+            document.addEventListener('touchend', (e) => {
+                const card = e.target.closest('.steam-card');
+                if (card) resetCardTilt(card);
+            }, { passive: true });
+
+            remeasureRestRects();
+        }
+
+        /* ==========================================================================
+           1.5. ПРОСМОТРЩИК (LIGHTBOX): ПОЭТАПНАЯ ПОДГРУЗКА (LITE -> STANDARD -> HIGH)
+           ========================================================================== */
+        let mobileLightboxOpen = false;
+        let mobileLightboxItems = [];
+        let mobileLightboxIndex = 0;
+
+        let lbScale = 1;
+        let lbPanX = 0;
+        let lbPanY = 0;
+        let lbPixelAnimRaf = null;
+        let lbCurrentPixelProgress = 0;
+        let lastAppliedLbPixelSize = -1;
+
+        function ensureCurrentSlideHighRes() {
+            if (!mobileLightboxOpen || !mobileLightboxItems.length) return;
+            const activeIndex = mobileLightboxIndex;
+            const item = mobileLightboxItems[activeIndex];
+            if (!item) return;
+            const lbImg = document.getElementById('mobile-lightbox-img');
+            loadHighResForLightbox(item, (highSrc) => {
+                if (mobileLightboxOpen && mobileLightboxIndex === activeIndex && lbImg) {
+                    lbImg.dataset.showingHigh = '1';
+                    if (lbImg.getAttribute('src') !== highSrc) {
+                        lbImg.src = highSrc;
+                    }
+                }
+            });
+        }
+
+        function applyLightboxTransform(withTransition = false) {
+            const lbImg = document.getElementById('mobile-lightbox-img');
+            if (!lbImg) return;
+            if (withTransition) {
+                lbImg.classList.remove('gesture-active');
+            } else {
+                lbImg.classList.add('gesture-active');
+            }
+            if (lbScale > 1.04 && lbImg.dataset.showingHigh !== '1') {
+                ensureCurrentSlideHighRes();
+            }
+            lbImg.style.transform = `translate3d(${lbPanX.toFixed(1)}px, ${lbPanY.toFixed(1)}px, 0) scale(${lbScale.toFixed(3)})`;
+        }
+
+        function resetLightboxZoom(withTransition = false) {
+            lbScale = 1;
+            lbPanX = 0;
+            lbPanY = 0;
+            applyLightboxTransform(withTransition);
+        }
+
+        function setLightboxPixelProgress(eased) {
+            const viewport = document.getElementById('app-viewport');
+            const lb = document.getElementById('mobile-photo-lightbox');
+            const flood = document.getElementById('lb-px-flood');
+            const tileBox = document.getElementById('lb-px-tile-box');
+            const dilate = document.getElementById('lb-px-dilate');
+
+            lbCurrentPixelProgress = eased;
+
+            if (eased <= 0.02) {
+                viewport.classList.remove('lightbox-pixel-active');
+                viewport.style.removeProperty('--lb-bright');
+                lastAppliedLbPixelSize = -1;
+                return;
+            }
+
+            viewport.classList.add('lightbox-pixel-active');
+            const bright = (1 - 0.28 * eased).toFixed(2);
+            viewport.style.setProperty('--lb-bright', bright);
+
+            const rawSize = Math.max(2, Math.round(2 + 12 * eased));
+            const pixelSize = rawSize % 2 === 0 ? rawSize : rawSize + 1;
+
+            if (pixelSize !== lastAppliedLbPixelSize) {
+                lastAppliedLbPixelSize = pixelSize;
+                const halfRadius = Math.max(1, Math.floor(pixelSize / 2));
+                if (flood && tileBox && dilate) {
+                    flood.setAttribute('x', String(halfRadius));
+                    flood.setAttribute('y', String(halfRadius));
+                    tileBox.setAttribute('width', String(pixelSize));
+                    tileBox.setAttribute('height', String(pixelSize));
+                    dilate.setAttribute('radius', String(halfRadius));
+                }
+                if (lb) {
+                    lb.style.setProperty('--lb-grid-size', `${pixelSize}px`);
+                }
+            }
+        }
+
+        function animateLightboxPixel(targetState, duration = 260, onDone) {
+            if (lbPixelAnimRaf) cancelAnimationFrame(lbPixelAnimRaf);
+            const startVal = lbCurrentPixelProgress;
+            const delta = targetState - startVal;
+            const startTime = performance.now();
+
+            function step(now) {
+                const t = Math.min((now - startTime) / duration, 1);
+                const eased = targetState > startVal
+                    ? 1 - Math.pow(1 - t, 3)
+                    : 1 - Math.pow(t, 3);
+                const current = targetState > startVal
+                    ? startVal + delta * eased
+                    : startVal * eased;
+
+                setLightboxPixelProgress(current);
+
+                if (t < 1) {
+                    lbPixelAnimRaf = requestAnimationFrame(step);
+                } else {
+                    setLightboxPixelProgress(targetState);
+                    lbPixelAnimRaf = null;
+                    if (onDone) onDone();
+                }
+            }
+            lbPixelAnimRaf = requestAnimationFrame(step);
+        }
+
+        function openMobileLightbox(cardEl) {
+            if (isEditMode) return;
+            const grid = cardEl.parentElement;
+            if (!grid) return;
+
+            triggerHaptic('medium');
+            resetCardTilt(cardEl);
+
+            mobileLightboxItems = [...grid.querySelectorAll('.sortable-photo-item')];
+            mobileLightboxIndex = mobileLightboxItems.indexOf(cardEl);
+            if (mobileLightboxIndex < 0) return;
+
+            mobileLightboxOpen = true;
+            resetLightboxZoom(false);
+            updateMobileLightboxSlide(false);
+
+            const lb = document.getElementById('mobile-photo-lightbox');
+            lb.classList.add('active');
+            document.body.classList.add('mobile-lightbox-open');
+            animateLightboxPixel(1, 270);
+        }
+
+        function updateMobileLightboxSlide(shouldScrollPage) {
+            if (!mobileLightboxItems.length) return;
+            const activeIndex = mobileLightboxIndex;
+            const item = mobileLightboxItems[activeIndex];
+            if (!item) return;
+
+            if (lightboxHighTimer) {
+                clearTimeout(lightboxHighTimer);
+                lightboxHighTimer = null;
+            }
+
+            const imgInside = item.querySelector('img');
+            const lbImg = document.getElementById('mobile-lightbox-img');
+            const counter = document.getElementById('mobile-lightbox-counter');
+
+            resetLightboxZoom(true);
+
+            if (imgInside && lbImg) {
+                delete lbImg.dataset.showingHigh;
+
+                // Если для этого кадра уже загружена high-версия, ставим её сразу же
+                if (imgInside.dataset.highLoaded === '1' && imgInside.dataset.highSrc) {
+                    lbImg.dataset.showingHigh = '1';
+                    lbImg.src = imgInside.dataset.highSrc;
+                } else {
+                    // Шаг 1: мгновенно отображаем то, что уже есть в карточке (lite или standard)
+                    lbImg.src = imgInside.src;
+
+                    // Шаг 2: параллельно подгружаем обычную (standard) версию (если ещё не загружена)
+                    upgradeCardToStandardRes(item, (stdSrc) => {
+                        if (!mobileLightboxOpen || mobileLightboxIndex !== activeIndex) return;
+                        if (lbImg.dataset.showingHigh !== '1') {
+                            lbImg.src = stdSrc;
+                        }
+                    });
+
+                    // Шаг 3: независимо от статуса standard, через 80мс запускаем загрузку супер-качественной (high) версии
+                    lightboxHighTimer = setTimeout(() => {
+                        if (!mobileLightboxOpen || mobileLightboxIndex !== activeIndex) return;
+                        ensureCurrentSlideHighRes();
+                    }, 80);
+                }
+
+                // Предзагружаем стандартные версии для соседних кадров
+                const nextItem = mobileLightboxItems[(activeIndex + 1) % mobileLightboxItems.length];
+                const prevItem = mobileLightboxItems[(activeIndex - 1 + mobileLightboxItems.length) % mobileLightboxItems.length];
+                if (nextItem) upgradeCardToStandardRes(nextItem);
+                if (prevItem && isFastConnection) upgradeCardToStandardRes(prevItem);
+            }
+            if (counter) {
+                counter.textContent = `${activeIndex + 1} / ${mobileLightboxItems.length}`;
+            }
+
+            if (shouldScrollPage) {
+                item.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        }
+
+        function stepMobileLightbox(delta) {
+            if (!mobileLightboxOpen || !mobileLightboxItems.length) return;
+            triggerHaptic('light');
+            mobileLightboxIndex = (mobileLightboxIndex + delta + mobileLightboxItems.length) % mobileLightboxItems.length;
+            updateMobileLightboxSlide(true);
+        }
+
+        function closeMobileLightbox(e) {
+            if (e) e.stopPropagation();
+            if (!mobileLightboxOpen) return;
+            if (lightboxHighTimer) {
+                clearTimeout(lightboxHighTimer);
+                lightboxHighTimer = null;
+            }
+            triggerHaptic('light');
+            mobileLightboxOpen = false;
+            resetLightboxZoom(true);
+            document.getElementById('mobile-photo-lightbox').classList.remove('active');
+            animateLightboxPixel(0, 240, () => {
+                if (!mobileLightboxOpen) {
+                    document.body.classList.remove('mobile-lightbox-open');
+                }
+            });
+        }
+
+        function handleLightboxBackdropClick(e) {
+            if (e.target.id === 'mobile-photo-lightbox' || e.target.id === 'mobile-lightbox-stage') {
+                closeMobileLightbox(e);
+            }
+        }
+
+        function initMobileLightboxInteractions() {
+            ['portraits-sortable-grid', 'reportage-sortable-grid'].forEach(gridId => {
+                const grid = document.getElementById(gridId);
+                if (!grid) return;
+                grid.addEventListener('click', (e) => {
+                    if (isEditMode) return;
+                    if (e.target.closest('.delete-photo-btn') || e.target.closest('.size-toggle-btn')) return;
+                    let card = e.target.closest('.sortable-photo-item');
+                    if (!card && window.getCurrentHoveredCard) {
+                        const hovered = window.getCurrentHoveredCard();
+                        if (hovered && hovered.classList.contains('sortable-photo-item') && grid.contains(hovered)) {
+                            card = hovered;
+                        }
+                    }
+                    if (card) {
+                        e.preventDefault();
+                        openMobileLightbox(card);
+                    }
+                });
+            });
+
+            const lb = document.getElementById('mobile-photo-lightbox');
+            const stage = document.getElementById('mobile-lightbox-stage');
+
+            let isPinching = false;
+            let wasMultiTouch = false;
+            let initialPinchDist = 0;
+            let initialPinchScale = 1;
+            let touchStartX = 0, touchStartY = 0;
+            let startPanX = 0, startPanY = 0;
+
+            const getTouchDist = (t1, t2) => Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
+
+            stage.addEventListener('touchstart', (e) => {
+                if (!mobileLightboxOpen) return;
+                if (e.touches.length >= 2) {
+                    isPinching = true;
+                    wasMultiTouch = true;
+                    initialPinchDist = getTouchDist(e.touches[0], e.touches[1]);
+                    initialPinchScale = lbScale;
+                } else if (e.touches.length === 1) {
+                    isPinching = false;
+                    touchStartX = e.touches[0].clientX;
+                    touchStartY = e.touches[0].clientY;
+                    startPanX = lbPanX;
+                    startPanY = lbPanY;
+                }
+            }, { passive: true });
+
+            stage.addEventListener('touchmove', (e) => {
+                if (!mobileLightboxOpen) return;
+                if (e.touches.length >= 2 && isPinching) {
+                    e.preventDefault();
+                    const dist = getTouchDist(e.touches[0], e.touches[1]);
+                    if (initialPinchDist > 10) {
+                        lbScale = Math.min(4.5, Math.max(1, initialPinchScale * (dist / initialPinchDist)));
+                        if (lbScale <= 1.02) {
+                            lbPanX = 0;
+                            lbPanY = 0;
+                        }
+                        applyLightboxTransform(false);
+                    }
+                } else if (e.touches.length === 1 && !wasMultiTouch) {
+                    const dx = e.touches[0].clientX - touchStartX;
+                    const dy = e.touches[0].clientY - touchStartY;
+                    if (lbScale > 1.05) {
+                        e.preventDefault();
+                        lbPanX = startPanX + dx;
+                        lbPanY = startPanY + dy;
+                        applyLightboxTransform(false);
+                    } else if (Math.abs(dx) > 8 && Math.abs(dx) > Math.abs(dy)) {
+                        e.preventDefault();
+                        lbPanX = dx * 0.42;
+                        applyLightboxTransform(false);
+                    }
+                }
+            }, { passive: false });
+
+            stage.addEventListener('touchend', (e) => {
+                if (!mobileLightboxOpen) return;
+                if (e.touches.length < 2) {
+                    isPinching = false;
+                }
+                if (wasMultiTouch) {
+                    if (e.touches.length === 0) {
+                        wasMultiTouch = false;
+                        if (lbScale < 1.06) {
+                            resetLightboxZoom(true);
+                        }
+                    }
+                    return;
+                }
+
+                if (e.changedTouches[0] && lbScale <= 1.05) {
+                    const dx = e.changedTouches[0].clientX - touchStartX;
+                    const dy = e.changedTouches[0].clientY - touchStartY;
+                    if (Math.abs(dx) > 48 && Math.abs(dx) > Math.abs(dy)) {
+                        stepMobileLightbox(dx < 0 ? 1 : -1);
+                    } else {
+                        resetLightboxZoom(true);
+                    }
+                }
+            }, { passive: true });
+
+            let isMouseDragging = false;
+            let mouseStartX = 0, mouseStartY = 0;
+            let mouseMoved = false;
+
+            stage.addEventListener('mousedown', (e) => {
+                if (!mobileLightboxOpen || e.button !== 0) return;
+                isMouseDragging = true;
+                mouseMoved = false;
+                mouseStartX = e.clientX;
+                mouseStartY = e.clientY;
+                startPanX = lbPanX;
+                startPanY = lbPanY;
+            });
+
+            window.addEventListener('mousemove', (e) => {
+                if (!mobileLightboxOpen || !isMouseDragging) return;
+                const dx = e.clientX - mouseStartX;
+                const dy = e.clientY - mouseStartY;
+                if (Math.hypot(dx, dy) > 6) mouseMoved = true;
+
+                if (lbScale > 1.05) {
+                    lbPanX = startPanX + dx;
+                    lbPanY = startPanY + dy;
+                    applyLightboxTransform(false);
+                } else {
+                    lbPanX = dx * 0.38;
+                    applyLightboxTransform(false);
+                }
+            });
+
+            window.addEventListener('mouseup', (e) => {
+                if (!mobileLightboxOpen || !isMouseDragging) return;
+                isMouseDragging = false;
+                const dx = e.clientX - mouseStartX;
+                const dy = e.clientY - mouseStartY;
+
+                if (lbScale <= 1.05) {
+                    if (Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy)) {
+                        stepMobileLightbox(dx < 0 ? 1 : -1);
+                    } else {
+                        resetLightboxZoom(true);
+                    }
+                }
+            });
+
+            stage.addEventListener('click', (e) => {
+                if (mouseMoved) {
+                    e.stopPropagation();
+                    mouseMoved = false;
+                }
+            }, true);
+
+            let wheelSwipeCooldown = 0;
+            lb.addEventListener('wheel', (e) => {
+                if (!mobileLightboxOpen) return;
+                e.preventDefault();
+
+                const isPinchGesture = e.ctrlKey;
+                const isDiscreteMouseWheel = !e.ctrlKey && e.deltaMode === 0 && Math.abs(e.deltaX) === 0 && Math.abs(e.deltaY) >= 40 && Number.isInteger(e.deltaY);
+
+                if (isPinchGesture || isDiscreteMouseWheel) {
+                    const zoomFactor = isPinchGesture ? -e.deltaY * 0.014 : -e.deltaY * 0.0022;
+                    lbScale = Math.min(4.5, Math.max(1, lbScale * (1 + zoomFactor)));
+                    if (lbScale <= 1.03) {
+                        lbScale = 1;
+                        lbPanX = 0;
+                        lbPanY = 0;
+                    }
+                    applyLightboxTransform(false);
+                    return;
+                }
+
+                if (lbScale > 1.05) {
+                    lbPanX -= e.deltaX;
+                    lbPanY -= e.deltaY;
+                    applyLightboxTransform(false);
+                    return;
+                }
+
+                const now = performance.now();
+                if (Math.abs(e.deltaX) > Math.abs(e.deltaY) * 1.2 && Math.abs(e.deltaX) > 16) {
+                    if (now - wheelSwipeCooldown > 420) {
+                        wheelSwipeCooldown = now;
+                        stepMobileLightbox(e.deltaX > 0 ? 1 : -1);
+                    }
+                }
+            }, { passive: false });
+
+            window.addEventListener('keydown', (e) => {
+                if (!mobileLightboxOpen) return;
+                if (e.key === 'ArrowRight') {
+                    e.preventDefault();
+                    stepMobileLightbox(1);
+                } else if (e.key === 'ArrowLeft') {
+                    e.preventDefault();
+                    stepMobileLightbox(-1);
+                } else if (e.key === 'Escape') {
+                    e.preventDefault();
+                    closeMobileLightbox();
+                }
+            });
+        }
+
+        /* ==========================================================================
+           2. ЛАМЕЛЬНЫЙ ЗАТВОР + ОПТИМИЗИРОВАННАЯ СТУПЕНЧАТАЯ ПИКСЕЛИЗАЦИЯ ЭКРАНА
+           ========================================================================== */
+        let lastAppliedShutterPixelSize = -1;
+
+        function renderXT4ShutterFrame(progress) {
+            const vw = window.innerWidth;
+            const vh = window.innerHeight;
+
+            const blade1 = document.getElementById('blade-1');
+            const blade2 = document.getElementById('blade-2');
+            const blade3 = document.getElementById('blade-3');
+            if (!blade1 || !blade2 || !blade3) return;
+
+            const arcRadiusX = Math.min(vw * 0.11, 130);
+            const arcOffsetX = -Math.sin(progress * Math.PI) * arcRadiusX;
+
+            const stowedY = -vh * 0.45;
+
+            const targetY1 = vh * 0.00;
+            const targetY2 = vh * 0.32;
+            const targetY3 = vh * 0.64;
+
+            const y1 = stowedY + (targetY1 - stowedY) * progress;
+            const y2 = stowedY + (targetY2 - stowedY) * progress;
+            const y3 = stowedY + (targetY3 - stowedY) * progress;
+
+            const x1 = arcOffsetX * 0.55;
+            const x2 = arcOffsetX * 0.82;
+            const x3 = arcOffsetX * 1.08;
+
+            blade1.style.transform = `translate3d(${x1.toFixed(1)}px, ${y1.toFixed(1)}px, 0)`;
+            blade2.style.transform = `translate3d(${x2.toFixed(1)}px, ${y2.toFixed(1)}px, 0)`;
+            blade3.style.transform = `translate3d(${x3.toFixed(1)}px, ${y3.toFixed(1)}px, 0)`;
+
+            const pinBaseX = vw * 0.86;
+            const pin1X = pinBaseX + x1;
+            const pin1Y = y1 + vh * 0.18;
+
+            const pin2X = pinBaseX + x2 - 14;
+            const pin2Y = y2 + vh * 0.18;
+
+            const pin3X = pinBaseX + x3 - 28;
+            const pin3Y = y3 + vh * 0.18;
+
+            const updatePin = (groupId, px, py) => {
+                const g = document.getElementById(groupId);
+                if (!g) return;
+                const outer = g.querySelector('.pin-outer');
+                const inner = g.querySelector('.pin-inner');
+                outer.setAttribute('cx', px);
+                outer.setAttribute('cy', py);
+                inner.setAttribute('cx', px);
+                inner.setAttribute('cy', py);
+            };
+
+            updatePin('pin-group-1', pin1X, pin1Y);
+            updatePin('pin-group-2', pin2X, pin2Y);
+            updatePin('pin-group-3', pin3X, pin3Y);
+        }
+
+        function setShutterPixelProgress(easedProgress) {
+            const viewport = document.getElementById('app-viewport');
+            const overlay = document.getElementById('shutter-pixel-grid-overlay');
+            const flood = document.getElementById('px-flood');
+            const tileBox = document.getElementById('px-tile-box');
+            const dilate = document.getElementById('px-dilate');
+
+            if (easedProgress <= 0.02) {
+                viewport.classList.remove('shutter-pixel-active');
+                overlay.classList.remove('active');
+                lastAppliedShutterPixelSize = -1;
+                return;
+            }
+
+            viewport.classList.add('shutter-pixel-active');
+            overlay.classList.add('active');
+
+            const rawPixelSize = Math.max(2, Math.round(2 + 26 * easedProgress));
+            const pixelSize = rawPixelSize % 2 === 0 ? rawPixelSize : rawPixelSize + 1;
+
+            if (pixelSize !== lastAppliedShutterPixelSize) {
+                lastAppliedShutterPixelSize = pixelSize;
+                const halfRadius = Math.max(1, Math.floor(pixelSize / 2));
+
+                if (flood && tileBox && dilate) {
+                    flood.setAttribute('x', String(halfRadius));
+                    flood.setAttribute('y', String(halfRadius));
+                    tileBox.setAttribute('width', String(pixelSize));
+                    tileBox.setAttribute('height', String(pixelSize));
+                    dilate.setAttribute('radius', String(halfRadius));
+                }
+
+                overlay.style.setProperty('--px-grid-size', `${pixelSize}px`);
+                overlay.style.setProperty('--px-blur', `${(easedProgress * 4).toFixed(1)}px`);
+            }
+        }
+
+        function switchPage(targetPage, fromHistory = false) {
+            if (mobileLightboxOpen) closeMobileLightbox();
+            if (isShutterAnimating || targetPage === currentPage) return;
+            isShutterAnimating = true;
+
+            triggerHaptic('medium');
+
+            if (!fromHistory) {
+                const newHash = targetPage === 'home' ? window.location.pathname + window.location.search : `#${targetPage}`;
+                try {
+                    history.pushState({ page: targetPage }, '', newHash);
+                } catch (_) {}
+            }
+
+            const viewport = document.getElementById('app-viewport');
+            const shutterEl = document.getElementById('lamellar-shutter');
+            const classicShutter = document.getElementById('classic-shutter-backup');
+
+            if (SHUTTER_MODE === 'classic') {
+                classicShutter.style.transformOrigin = 'top';
+                classicShutter.style.transform = 'scaleY(1)';
+                setShutterPixelProgress(0.8);
+
+                setTimeout(() => {
+                    applyPageVisibility(targetPage);
+                    classicShutter.style.transformOrigin = 'bottom';
+                    classicShutter.style.transform = 'scaleY(0)';
+                    setShutterPixelProgress(0);
+                    setTimeout(() => { isShutterAnimating = false; }, 360);
+                }, 360);
+                return;
+            }
+
+            shutterEl.classList.add('active');
+            const closeDuration = 280;
+            const holdDuration = 85;
+            const openDuration = 310;
+            const startTime = performance.now();
+
+            function animateClose(now) {
+                const elapsed = now - startTime;
+                const t = Math.min(elapsed / closeDuration, 1);
+                const eased = 1 - Math.pow(1 - t, 3);
+
+                renderXT4ShutterFrame(eased);
+                setShutterPixelProgress(eased);
+
+                if (t < 1) {
+                    requestAnimationFrame(animateClose);
+                } else {
+                    applyPageVisibility(targetPage);
+
+                    setTimeout(() => {
+                        const openStart = performance.now();
+
+                        function animateOpen(nowOpen) {
+                            const elapsedOpen = nowOpen - openStart;
+                            const tOpen = Math.min(elapsedOpen / openDuration, 1);
+                            const easedOpen = 1 - Math.pow(tOpen, 3);
+
+                            renderXT4ShutterFrame(easedOpen);
+                            setShutterPixelProgress(easedOpen);
+
+                            if (tOpen < 1) {
+                                requestAnimationFrame(animateOpen);
+                            } else {
+                                renderXT4ShutterFrame(0);
+                                setShutterPixelProgress(0);
+                                shutterEl.classList.remove('active');
+                                viewport.style.filter = '';
+                                viewport.style.transform = '';
+                                isShutterAnimating = false;
+                            }
+                        }
+                        requestAnimationFrame(animateOpen);
+                    }, holdDuration);
+                }
+            }
+
+            requestAnimationFrame(animateClose);
+        }
+
+        function applyPageVisibility(targetPage) {
+            currentPage = targetPage;
+            document.querySelectorAll('.page-view').forEach(el => el.classList.add('hidden'));
+            const activeView = document.getElementById(`page-${targetPage}`);
+            if (activeView) activeView.classList.remove('hidden');
+
+            window.scrollTo({ top: 0, behavior: 'instant' });
+            requestAnimationFrame(() => {
+                if (window.remeasureTiltRects) window.remeasureTiltRects();
+                initDesktopScrollStandardUpgrade();
+            });
+        }
+
+        function initBrowserHistoryNavigation() {
+            const getPageFromHash = () => {
+                const h = window.location.hash.replace('#', '');
+                return (h === 'portraits' || h === 'reportage') ? h : 'home';
+            };
+
+            const initialPage = getPageFromHash();
+            try {
+                history.replaceState({ page: initialPage }, '', window.location.href);
+            } catch (_) {}
+
+            if (initialPage !== 'home') {
+                applyPageVisibility(initialPage);
+            }
+
+            window.addEventListener('popstate', (e) => {
+                if (mobileLightboxOpen) {
+                    closeMobileLightbox();
+                }
+                const targetPage = (e.state && e.state.page) ? e.state.page : getPageFromHash();
+                if (targetPage !== currentPage) {
+                    if (isShutterAnimating) {
+                        isShutterAnimating = false;
+                        document.getElementById('lamellar-shutter').classList.remove('active');
+                        setShutterPixelProgress(0);
+                    }
+                    switchPage(targetPage, true);
+                }
+            });
+        }
+
+        /* ==========================================================================
+           3. ЖУРНАЛЬНАЯ СЕТКА И 3 УРОВНЯ КАЧЕСТВА (LITE -> STANDARD -> HIGH)
+           ========================================================================== */
+        const SPAN_LABELS = {
+            '4': '1/3',
+            '5': 'узкий',
+            '6': '1/2',
+            '7': 'средн.',
+            '8': 'широкий',
+            '12': 'весь ряд'
+        };
+
+        function computeEditorialSpans(files) {
+            const spans = [];
+            let i = 0;
+            let rowIndex = 0;
+
+            const pairPatterns = [
+                [7, 5],
+                [6, 6],
+                [5, 7],
+                [6, 6]
+            ];
+
+            while (i < files.length) {
+                const name = files[i];
+                const d = PHOTO_DIMS[name] || { w: 3, h: 4 };
+                const ratio = d.w / d.h;
+
+                if (rowIndex % 6 === 2 && ratio >= 1.35) {
+                    spans.push({ span: '12', offset: false });
+                    i += 1;
+                    rowIndex += 1;
+                    continue;
+                }
+
+                if (i + 2 < files.length && rowIndex % 5 === 3) {
+                    const d1 = PHOTO_DIMS[files[i + 1]] || { w: 3, h: 4 };
+                    const d2 = PHOTO_DIMS[files[i + 2]] || { w: 3, h: 4 };
+                    if (ratio < 0.9 && (d1.w / d1.h) < 0.9 && (d2.w / d2.h) < 0.9) {
+                        spans.push({ span: '4', offset: false });
+                        spans.push({ span: '4', offset: true });
+                        spans.push({ span: '4', offset: false });
+                        i += 3;
+                        rowIndex += 1;
+                        continue;
+                    }
+                }
+
+                if (i + 1 < files.length) {
+                    const nextName = files[i + 1];
+                    const dNext = PHOTO_DIMS[nextName] || { w: 3, h: 4 };
+                    const rNext = dNext.w / dNext.h;
+
+                    let s1, s2;
+                    if (ratio > 1.25 && rNext < 0.9) {
+                        s1 = '7'; s2 = '5';
+                    } else if (ratio < 0.9 && rNext > 1.25) {
+                        s1 = '5'; s2 = '7';
+                    } else {
+                        const pat = pairPatterns[rowIndex % pairPatterns.length];
+                        s1 = String(pat[0]);
+                        s2 = String(pat[1]);
+                    }
+
+                    const addOffset = (rowIndex % 2 === 0);
+                    spans.push({ span: s1, offset: false });
+                    spans.push({ span: s2, offset: addOffset });
+                    i += 2;
+                    rowIndex += 1;
+                } else {
+                    spans.push({ span: ratio > 1.25 ? '7' : '6', offset: false });
+                    i += 1;
+                    rowIndex += 1;
+                }
+            }
+            return spans;
+        }
+
+        function buildGallery(gridId, dir, files) {
+            const grid = document.getElementById(gridId);
+            if (!grid) return;
+            grid.innerHTML = '';
+
+            const layoutPlan = computeEditorialSpans(files);
+
+            files.forEach((name, i) => {
+                const d = PHOTO_DIMS[name] || { w: 3, h: 4 };
+                const ratio = d.w / d.h;
+                const plan = layoutPlan[i] || { span: '6', offset: false };
+                const span = plan.span;
+
+                const liteSrc = encodeURI(`${dir}/lite/${name}.webp`);
+                const stdSrc = encodeURI(`${dir}/${name}.webp`);
+                const highSrc = encodeURI(`${dir}/high/${name}.webp`);
+
+                const el = document.createElement('div');
+                el.dataset.photoId = name;
+                el.dataset.colSpan = span;
+                el.style.aspectRatio = `${d.w} / ${d.h}`;
+                el.style.maxHeight = span === '12' ? '74vh' : (ratio < 0.85 ? '70vh' : '74vh');
+                el.className = `sortable-photo-item steam-card meta-box w-full mx-auto col-span-${span}` + (plan.offset ? ' mt-3 sm:mt-8 md:mt-10' : '');
+
+                el.innerHTML = `
+                    <img src="${liteSrc}" data-lite-src="${liteSrc}" data-std-src="${stdSrc}" data-high-src="${highSrc}" onerror="if(this.src!==this.dataset.stdSrc){this.src=this.dataset.stdSrc;this.dataset.stdUpgraded='1';}" alt="" loading="lazy" decoding="async" draggable="false" oncontextmenu="return false;" class="absolute inset-0 w-full h-full object-cover" />
+                    <button onclick="deletePhotoItem(event, this)" class="delete-photo-btn absolute top-2 left-2 sm:top-3 sm:left-3 z-30 bg-black/90 hover:bg-red-600 text-white font-dot text-[10px] sm:text-xs px-2 py-0.5 sm:px-2.5 sm:py-1 transition-colors">✕</button>
+                    <button onclick="cycleItemSpan(event, this)" class="size-toggle-btn absolute top-2 right-2 sm:top-3 sm:right-3 z-30 bg-black text-white font-dot text-[10px] sm:text-xs px-2 py-0.5 sm:px-2.5 sm:py-1">размер: ${SPAN_LABELS[span]}</button>
+                    <div class="steam-glare"></div>
+                `;
+                grid.appendChild(el);
+            });
+
+            applyEditorialRowPolish(gridId);
+        }
+
+        function applyEditorialRowPolish(gridId) {
+            const grid = document.getElementById(gridId);
+            if (!grid) return;
+            const items = [...grid.querySelectorAll('.sortable-photo-item')];
+
+            const positioningClasses = [
+                'col-start-1', 'col-start-2', 'col-start-3', 'col-start-4', 'col-start-5',
+                'col-end-13'
+            ];
+
+            items.forEach(el => el.classList.remove(...positioningClasses));
+
+            let currentRow = [];
+            let currentSum = 0;
+            let rowNumber = 0;
+
+            const flushRow = (row, sum, rIdx) => {
+                if (!row.length) return;
+
+                if (row.length === 1) {
+                    const onlyCard = row[0];
+                    const span = parseInt(onlyCard.dataset.colSpan || '6', 10);
+                    if (span < 12) {
+                        const freeCols = 12 - span;
+                        const startCol = rIdx % 2 === 0
+                            ? Math.max(2, Math.floor(freeCols / 2) + 1)
+                            : Math.max(2, Math.min(5, freeCols));
+                        onlyCard.classList.add(`col-start-${startCol}`);
+                    }
+                } else if (row.length === 2 && sum < 12) {
+                    const secondCard = row[1];
+                    secondCard.classList.add('col-end-13');
+                }
+            };
+
+            items.forEach(item => {
+                const span = parseInt(item.dataset.colSpan || '6', 10);
+                if (currentSum + span > 12) {
+                    flushRow(currentRow, currentSum, rowNumber);
+                    rowNumber += 1;
+                    currentRow = [item];
+                    currentSum = span;
+                } else {
+                    currentRow.push(item);
+                    currentSum += span;
+                }
+            });
+
+            flushRow(currentRow, currentSum, rowNumber);
+        }
+
+        function initTouchSort() {
+            let touchItem = null, startX = 0, startY = 0, moved = false;
+
+            document.addEventListener('pointerdown', (e) => {
+                if (!isEditMode || e.pointerType === 'mouse') return;
+                const item = e.target.closest('.sortable-photo-item');
+                if (!item || e.target.closest('.size-toggle-btn') || e.target.closest('.delete-photo-btn')) return;
+                touchItem = item;
+                startX = e.clientX;
+                startY = e.clientY;
+                moved = false;
+            }, { passive: true });
+
+            document.addEventListener('pointermove', (e) => {
+                if (!isEditMode || !touchItem || e.pointerType === 'mouse') return;
+                if (!moved) {
+                    if (Math.hypot(e.clientX - startX, e.clientY - startY) < 10) return;
+                    moved = true;
+                    touchItem.classList.add('dragging');
+                    touchItem.style.touchAction = 'none';
+                }
+                e.preventDefault();
+
+                const under = document.elementFromPoint(e.clientX, e.clientY);
+                const overItem = under && under.closest('.sortable-photo-item');
+                if (overItem && overItem !== touchItem && overItem.parentNode === touchItem.parentNode) {
+                    const rect = overItem.getBoundingClientRect();
+                    const insertAfter = (e.clientY - rect.top) > (rect.height / 2);
+                    touchItem.parentNode.insertBefore(touchItem, insertAfter ? overItem.nextSibling : overItem);
+                }
+            }, { passive: false });
+
+            const finish = () => {
+                if (touchItem) {
+                    const parentGridId = touchItem.parentNode && touchItem.parentNode.id;
+                    touchItem.classList.remove('dragging');
+                    touchItem.style.touchAction = '';
+                    touchItem = null;
+                    if (parentGridId) applyEditorialRowPolish(parentGridId);
+                    saveSiteConfig();
+                    requestAnimationFrame(() => window.remeasureTiltRects && window.remeasureTiltRects());
+                }
+            };
+            document.addEventListener('pointerup', finish);
+            document.addEventListener('pointercancel', finish);
+        }
+
+        /* ==========================================================================
+           4. РЕЖИМ КОНСТРУКТОРА
+           ========================================================================== */
+        let isEditMode = new URLSearchParams(window.location.search).get('edit') === '1';
+        let draggedElement = null;
+        let deletedHistory = [];
+        const SITE_CONFIG_KEY = 'ratnejal-site-config-v7';
+
+        function getSiteConfig() {
+            try { return JSON.parse(localStorage.getItem(SITE_CONFIG_KEY)) || SAVED_SITE_CONFIG; } catch (_) { return SAVED_SITE_CONFIG; }
+        }
+
+        function saveSiteConfig() {
+            const galleries = id => [...document.querySelectorAll(`#${id} .sortable-photo-item`)].map(el => ({
+                id: el.dataset.photoId,
+                colSpan: el.dataset.colSpan || '6'
+            }));
+            const texts = {};
+            document.querySelectorAll('[data-editable-text]').forEach(el => texts[el.dataset.editableText] = el.innerHTML.trim());
+            const meCrop = {
+                x: document.getElementById('ctrl-me-x').value + '%',
+                y: document.getElementById('ctrl-me-y').value + '%',
+                scale: (document.getElementById('ctrl-me-scale').value / 100).toFixed(2)
+            };
+            localStorage.setItem(SITE_CONFIG_KEY, JSON.stringify({
+                meCrop,
+                texts,
+                portraits: galleries('portraits-sortable-grid'),
+                reportage: galleries('reportage-sortable-grid')
+            }));
+        }
+
+        function applySavedConfig() {
+            const config = getSiteConfig();
+            if (!config) return;
+            Object.entries(config.texts || {}).forEach(([key, value]) => {
+                const el = document.querySelector(`[data-editable-text="${key}"]`);
+                if (el) {
+                    if (key === 'heroTitle') {
+                        el.innerHTML = 'привет!<div>я женя,<br class="hidden sm:inline"> фотограф<br>из<br class="hidden sm:inline"> звенигорода.</div>';
+                    } else {
+                        el.innerHTML = value;
+                    }
+                }
+            });
+            const crop = config.meCrop || {};
+            ['x', 'y', 'scale'].forEach(key => {
+                if (!crop[key]) return;
+                document.documentElement.style.setProperty(`--me-${key}`, crop[key]);
+            });
+            if (crop.x) document.getElementById('ctrl-me-x').value = parseFloat(crop.x);
+            if (crop.y) document.getElementById('ctrl-me-y').value = parseFloat(crop.y);
+            if (crop.scale) document.getElementById('ctrl-me-scale').value = Math.round(parseFloat(crop.scale) * 100);
+
+            [['portraits-sortable-grid', config.portraits], ['reportage-sortable-grid', config.reportage]].forEach(([id, items]) => {
+                if (!Array.isArray(items)) return;
+                const grid = document.getElementById(id);
+                const byId = new Map([...grid.children].map(el => [el.dataset.photoId, el]));
+                items.forEach(item => {
+                    const el = byId.get(item.id);
+                    if (el) {
+                        setItemSpan(el, item.colSpan);
+                        grid.appendChild(el);
+                        byId.delete(item.id);
+                    }
+                });
+                byId.forEach(el => el.remove());
+                applyEditorialRowPolish(id);
+            });
+        }
+
+        function setItemSpan(card, span) {
+            const safeSpan = ['4','5','6','7','8','12'].includes(String(span)) ? String(span) : '6';
+            card.classList.remove(
+                'col-span-4', 'col-span-5', 'col-span-6', 'col-span-7', 'col-span-8', 'col-span-12',
+                'md:col-span-4', 'md:col-span-5', 'md:col-span-6', 'md:col-span-7', 'md:col-span-8', 'md:col-span-12'
+            );
+            card.classList.add(`col-span-${safeSpan}`);
+            card.dataset.colSpan = safeSpan;
+            const btn = card.querySelector('.size-toggle-btn');
+            if (btn) btn.textContent = `размер: ${SPAN_LABELS[safeSpan]}`;
+        }
+
+        function deletePhotoItem(e, button) {
+            e.preventDefault();
+            e.stopPropagation();
+            const card = button.closest('.sortable-photo-item');
+            if (!card) return;
+            const gridId = card.parentElement.id;
+            deletedHistory.push({
+                gridId,
+                card,
+                index: [...card.parentElement.children].indexOf(card)
+            });
+            card.remove();
+            applyEditorialRowPolish(gridId);
+            saveSiteConfig();
+            requestAnimationFrame(() => window.remeasureTiltRects && window.remeasureTiltRects());
+        }
+
+        function undoDeletePhoto() {
+            const record = deletedHistory.pop();
+            if (!record) return;
+            const grid = document.getElementById(record.gridId);
+            grid.insertBefore(record.card, grid.children[record.index] || null);
+            applyEditorialRowPolish(record.gridId);
+            saveSiteConfig();
+            requestAnimationFrame(() => window.remeasureTiltRects && window.remeasureTiltRects());
+        }
+
+        function randomizeCurrentGallery() {
+            const id = currentPage === 'portraits' ? 'portraits-sortable-grid' : currentPage === 'reportage' ? 'reportage-sortable-grid' : null;
+            if (!id) return;
+            const grid = document.getElementById(id);
+            const items = [...grid.children];
+            for (let i = items.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [items[i], items[j]] = [items[j], items[i]];
+            }
+            const ids = items.map(el => el.dataset.photoId);
+            const newPlan = computeEditorialSpans(ids);
+            items.forEach((card, idx) => {
+                const plan = newPlan[idx] || { span: '6', offset: false };
+                setItemSpan(card, plan.span);
+                card.classList.toggle('mt-3', !!plan.offset);
+                card.classList.toggle('sm:mt-8', !!plan.offset);
+                card.classList.toggle('md:mt-10', !!plan.offset);
+                grid.appendChild(card);
+            });
+            applyEditorialRowPolish(id);
+            saveSiteConfig();
+            requestAnimationFrame(() => window.remeasureTiltRects && window.remeasureTiltRects());
+        }
+
+        function resetSiteEdits() {
+            localStorage.removeItem(SITE_CONFIG_KEY);
+            localStorage.removeItem('ratnejal-site-config-v6');
+            localStorage.removeItem('ratnejal-site-config-v5');
+            localStorage.removeItem('ratnejal-site-config-v4');
+            localStorage.removeItem('ratnejal-site-config-v3');
+            localStorage.removeItem('ratnejal-site-config-v2');
+            localStorage.removeItem('ratnejal-site-config-v1');
+            window.location.reload();
+        }
+
+        function toggleEditMode(forceState) {
+            isEditMode = typeof forceState === 'boolean' ? forceState : !isEditMode;
+            document.body.classList.toggle('edit-mode-active', isEditMode);
+            document.getElementById('admin-layout-bar').classList.toggle('hidden', !isEditMode);
+
+            if (isEditMode) {
+                document.querySelectorAll('.steam-card').forEach(card => resetCardTilt(card));
+            } else if (window.remeasureTiltRects) {
+                requestAnimationFrame(() => window.remeasureTiltRects());
+            }
+
+            document.querySelectorAll('.sortable-photo-item').forEach(item => {
+                if (isEditMode) {
+                    item.setAttribute('draggable', 'true');
+                } else {
+                    item.removeAttribute('draggable');
+                }
+            });
+
+            document.querySelectorAll('[data-editable-text]').forEach(el => {
+                el.contentEditable = isEditMode ? 'true' : 'false';
+            });
+        }
+
+        function updateMeCropFromSliders() {
+            const x = document.getElementById('ctrl-me-x').value;
+            const y = document.getElementById('ctrl-me-y').value;
+            const scale = (document.getElementById('ctrl-me-scale').value / 100).toFixed(2);
+            document.documentElement.style.setProperty('--me-x', `${x}%`);
+            document.documentElement.style.setProperty('--me-y', `${y}%`);
+            document.documentElement.style.setProperty('--me-scale', scale);
+            saveSiteConfig();
+        }
+
+        function cycleItemSpan(e, btn) {
+            e.stopPropagation();
+            const card = btn.closest('.sortable-photo-item');
+            if (!card) return;
+
+            const spans = ['5', '6', '7', '12', '4', '8'];
+            const current = card.dataset.colSpan || '6';
+            const next = spans[(spans.indexOf(current) + 1) % spans.length];
+
+            setItemSpan(card, next);
+            if (card.parentElement && card.parentElement.id) {
+                applyEditorialRowPolish(card.parentElement.id);
+            }
+            saveSiteConfig();
+            if (window.remeasureTiltRects) setTimeout(window.remeasureTiltRects, 200);
+        }
+
+        function initSortableGalleries() {
+            const containers = [
+                document.getElementById('portraits-sortable-grid'),
+                document.getElementById('reportage-sortable-grid')
+            ];
+
+            containers.forEach(container => {
+                if (!container) return;
+
+                container.addEventListener('dragstart', (e) => {
+                    if (!isEditMode) return;
+                    const target = e.target.closest('.sortable-photo-item');
+                    if (!target) return;
+                    draggedElement = target;
+                    requestAnimationFrame(() => target.classList.add('dragging'));
+                });
+
+                container.addEventListener('dragend', () => {
+                    if (draggedElement) {
+                        draggedElement.classList.remove('dragging');
+                        draggedElement = null;
+                    }
+                    applyEditorialRowPolish(container.id);
+                    saveSiteConfig();
+                    requestAnimationFrame(() => window.remeasureTiltRects && window.remeasureTiltRects());
+                });
+
+                container.addEventListener('dragover', (e) => {
+                    if (!isEditMode || !draggedElement) return;
+                    e.preventDefault();
+                    const overItem = e.target.closest('.sortable-photo-item');
+                    if (overItem && overItem !== draggedElement && overItem.parentNode === container) {
+                        const rect = overItem.getBoundingClientRect();
+                        const insertAfter = (e.clientY - rect.top) > (rect.height / 2);
+                        container.insertBefore(draggedElement, insertAfter ? overItem.nextSibling : overItem);
+                    }
+                });
+            });
+
+            window.addEventListener('keydown', (e) => {
+                if (e.shiftKey && e.altKey && e.code === 'KeyE') {
+                    e.preventDefault();
+                    toggleEditMode();
+                }
+            });
+
+            if (isEditMode) toggleEditMode(true);
+            document.querySelectorAll('[data-editable-text]').forEach(el => el.addEventListener('input', saveSiteConfig));
+            window.addEventListener('keydown', e => {
+                if ((e.ctrlKey || e.metaKey) && e.code === 'KeyZ' && isEditMode) {
+                    e.preventDefault();
+                    undoDeletePhoto();
+                }
+            });
+        }
+
+        function exportPhotoOrder() {
+            const portraitsOrder = [...document.querySelectorAll('#portraits-sortable-grid .sortable-photo-item')].map(el => ({
+                id: el.dataset.photoId,
+                colSpan: el.dataset.colSpan || '6'
+            }));
+            const reportageOrder = [...document.querySelectorAll('#reportage-sortable-grid .sortable-photo-item')].map(el => ({
+                id: el.dataset.photoId,
+                colSpan: el.dataset.colSpan || '6'
+            }));
+
+            const texts = {};
+            document.querySelectorAll('[data-editable-text]').forEach(el => {
+                texts[el.dataset.editableText] = el.innerHTML.trim();
+            });
+
+            const meCrop = {
+                x: document.getElementById('ctrl-me-x').value + '%',
+                y: document.getElementById('ctrl-me-y').value + '%',
+                scale: (document.getElementById('ctrl-me-scale').value / 100).toFixed(2)
+            };
+
+            const json = JSON.stringify({ meCrop, texts, portraits: portraitsOrder, reportage: reportageOrder }, null, 2);
+
+            const textarea = document.createElement('textarea');
+            textarea.value = json;
+            document.body.appendChild(textarea);
+            textarea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textarea);
+
+            const btn = document.getElementById('export-config-btn');
+            const oldText = btn.textContent;
+            btn.textContent = 'скопировано в буфер!';
+            setTimeout(() => btn.textContent = oldText, 2000);
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            detectNetworkQuality();
+            initHapticEngine();
+            renderXT4ShutterFrame(0);
+            buildGallery('portraits-sortable-grid', 'photos', PORTRAITS_FILES);
+            buildGallery('reportage-sortable-grid', 'documental', DOCUMENTAL_FILES);
+            applySavedConfig();
+            initDesktopScrollStandardUpgrade();
+            populateCardGrid6x3('card-portraits', PORTRAITS_THUMBS);
+            populateCardGrid6x3('card-reportage', DOCUMENTAL_THUMBS);
+            initSteamCards();
+            initMobileLightboxInteractions();
+            initBrowserHistoryNavigation();
+            initSortableGalleries();
+            initTouchSort();
+            if (window.remeasureTiltRects) window.remeasureTiltRects();
+        });
+    </script>
+</body>
+</html>
