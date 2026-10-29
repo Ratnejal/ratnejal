@@ -50,32 +50,49 @@
             transform: translateZ(0);
         }
 
-        /* ==================== КОНТЕЙНЕР САЙТА И ЭФФЕКТ ПИКСЕЛИЗАЦИИ ЗАТВОРА ==================== */
+        /* ==================== КОНТЕЙНЕР САЙТА И ЭФФЕКТ ПИКСЕЛИЗАЦИИ ЗАТВОРА / ЛАЙТБОКСА ==================== */
         #app-viewport {
             transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+            background-color: #FFFFFF;
+        }
+
+        /* КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ БЕЛОГО ЭКРАНА И ЛАГОВ НА ГЛУБОКОМ СКРОЛЛЕ:
+           Когда открыт лайтбокс или идёт затвор, #app-viewport фиксируется ровно в 1 экран (100vw x 100dvh),
+           а JS оставляет в рендере ТОЛЬКО 3-6 карточек, которые сейчас видны на экране, с их точными экранными координатами.
+           Поэтому текстура под SVG-фильтром ВСЕГДА равна ровно 1 экрану (а не 25 000px), никогда не превышает лимит GPU
+           (4096px/8192px) и фотографии никогда не пропадают в белый фон даже в самом низу галереи! */
+        body.viewport-filter-locked {
+            overflow: hidden !important;
+        }
+
+        body.viewport-filter-locked #app-viewport {
+            position: fixed !important;
+            inset: 0 !important;
+            width: 100vw !important;
+            height: 100dvh !important;
+            overflow: hidden !important;
+            background-color: #FFFFFF;
         }
 
         #app-viewport.shutter-pixel-active {
             will-change: filter;
             filter: url(#shutter-pixelate-filter) contrast(1.08);
+            -webkit-filter: url(#shutter-pixelate-filter) contrast(1.08);
         }
 
         #app-viewport.lightbox-pixel-active {
             will-change: filter;
             filter: url(#mobile-lightbox-pixel-filter) brightness(var(--lb-bright, 1)) contrast(1.08);
+            -webkit-filter: url(#mobile-lightbox-pixel-filter) brightness(var(--lb-bright, 1)) contrast(1.08);
         }
 
-        /* Аппаратное ускорение для Firefox/LibreWolf и мобильных GPU:
-           SVG feTile+feMorphology на весь документ рендерится на CPU, поэтому на Gecko и тач-экранах
-           включаем GPU-фильтр с чёткой пиксельной сеткой оверлея — даёт стабильные 60-120 FPS без лагов */
-        html.is-gecko #app-viewport.shutter-pixel-active,
-        html.is-mobile-device #app-viewport.shutter-pixel-active {
+        /* На Firefox/LibreWolf SVG feTile+feMorphology работает на CPU, поэтому там используем быстрый GPU-фильтр */
+        html.is-gecko #app-viewport.shutter-pixel-active {
             filter: contrast(1.12);
         }
 
-        html.is-gecko #app-viewport.lightbox-pixel-active,
-        html.is-mobile-device #app-viewport.lightbox-pixel-active {
-            filter: brightness(var(--lb-bright, 0.72)) contrast(1.08) blur(2px);
+        html.is-gecko #app-viewport.lightbox-pixel-active {
+            filter: brightness(var(--lb-bright, 0.72)) contrast(1.08) blur(2.5px);
         }
 
         body.mobile-lightbox-open #app-viewport {
@@ -454,14 +471,11 @@
             bottom: 220px;
         }
 
-        .steam-card-wrapper {
-            perspective: 1100px;
-        }
-
+        /* Важно: НЕ задаём perspective: 1100px на обёртку всей галереи (.steam-card-wrapper),
+           потому что в Safari/Chrome 3D-контекст на 125 карточках ломает SVG-фильтр и переполняет VRAM.
+           Перспектива применяется индивидуально в transform: perspective(1000px) только активной карточке! */
         .steam-card {
             position: relative;
-            backface-visibility: hidden;
-            -webkit-backface-visibility: hidden;
             transition: transform 0.16s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.2s ease;
         }
 
@@ -469,11 +483,6 @@
         .steam-card.touch-lens-active {
             will-change: transform, box-shadow;
             z-index: 25;
-        }
-
-        /* Изоляция слоёв карточек галереи без content-visibility, чтобы не вызывать скачков высоты при скролле */
-        .sortable-photo-item {
-            contain: layout paint;
         }
 
         .steam-card > *:not(.delete-photo-btn):not(.size-toggle-btn) {
@@ -578,7 +587,7 @@
         }
     </style>
     <script>
-        /* Мгновенное определение движка Gecko (Firefox / LibreWolf), мобильного тач-экрана и физического монитора 16:9 (HP Omen 17) */
+        /* Мгновенное определение движка Gecko (Firefox / LibreWolf) и физического монитора 16:9 (HP Omen 17) */
         (function() {
             const ua = navigator.userAgent || '';
             if (/Firefox|FxiOS|LibreWolf|Gecko\//i.test(ua) && !/Chrome|Chromium|Edg|OPR/i.test(ua)) {
@@ -586,9 +595,6 @@
             }
 
             function syncDisplayGeometryClass() {
-                const isMobile = window.innerWidth < 640 || /Android|iPhone|iPad|iPod/i.test(ua);
-                document.documentElement.classList.toggle('is-mobile-device', isMobile);
-
                 if (window.innerWidth < 640) {
                     document.documentElement.classList.remove('widescreen-16-9');
                     return;
@@ -599,8 +605,7 @@
                 const viewportRatio = window.innerWidth / Math.max(window.innerHeight, 1);
 
                 // ВАЖНО: проверяем ТОЛЬКО физический экран монитора (screenRatio >= 1.72, т.е. 16:9 = 1.777).
-                // На MacBook 14" screenRatio всегда равен 1.54 (16:10), поэтому MacBook НИКОГДА не получит класс widescreen-16-9,
-                // даже если окно браузера сплюснуто по высоте до viewportRatio 1.77..1.79!
+                // На MacBook 14" screenRatio всегда равен 1.54 (16:10), поэтому MacBook НИКОГДА не получит класс widescreen-16-9!
                 const isWide16by9 = screenRatio >= 1.72 && viewportRatio >= 1.63;
                 document.documentElement.classList.toggle('widescreen-16-9', isWide16by9);
             }
@@ -825,7 +830,9 @@
         <span>@ratnejal</span>
     </a>
 
-    <!-- SVG-ФИЛЬТРЫ ДИСКРЕТИЗАЦИИ (ПИКСЕЛИЗАЦИЯ ЭКРАНА ПРИ ХОДЕ ЗАТВОРА И ЛАЙТБОКСЕ) -->
+    <!-- SVG-ФИЛЬТРЫ ДИСКРЕТИЗАЦИИ (ПИКСЕЛИЗАЦИЯ ЭКРАНА ПРИ ХОДЕ ЗАТВОРА И ЛАЙТБОКСЕ)
+         Использование стандартных координат 0%..100% в паре с одноэкранной фиксацией #app-viewport
+         гарантирует 100% работу пикселизации на iOS Safari, Android Chrome и всех десктопах без переполнения GPU! -->
     <svg width="0" height="0" style="position:absolute;pointer-events:none;" aria-hidden="true">
         <defs>
             <filter id="shutter-pixelate-filter" x="0%" y="0%" width="100%" height="100%" color-interpolation-filters="sRGB">
@@ -1216,8 +1223,178 @@
             return window.innerWidth < 640;
         }
 
-        function useLightweightFilters() {
-            return IS_GECKO || isMobileViewport();
+        /* ==========================================================================
+           ОДНОЭКРАННАЯ ISOLATION-СИСТЕМА ДЛЯ ПИКСЕЛИЗАЦИИ (ЗАТВОР И ЛАЙТБОКС)
+           Решает проблему пропадания фотографий в белый фон и лагов внизу длинной галереи:
+           При включении SVG-фильтра мы НЕ рендерим всю страницу высотой 20 000px.
+           Вместо этого мы замеряем 3–6 карточек, которые прямо сейчас видны в окне,
+           и фиксируем только их внутри #app-viewport размером ровно 100vw x 100dvh,
+           а остальные 120 карточек временно выключаем из рендера (display: none).
+           ========================================================================== */
+        let isViewportFilterLocked = false;
+        let lockedScrollY = 0;
+        let frozenGalleryState = null;
+
+        function getActivePageViewEl() {
+            return document.getElementById(`page-${currentPage}`);
+        }
+
+        function lockViewportForPixelFilter() {
+            if (isViewportFilterLocked) return;
+            lockedScrollY = window.scrollY || window.pageYOffset || 0;
+            const vw = window.innerWidth;
+            const vh = window.innerHeight;
+            const activePage = getActivePageViewEl();
+
+            // Если мы на странице портретов или репортажа и проскроллили галерею,
+            // замораживаем в кадре только видимые сейчас элементы, чтобы размер текстуры фильтра был строго 1 экран!
+            if (activePage && (currentPage === 'portraits' || currentPage === 'reportage')) {
+                const gridId = currentPage === 'portraits' ? 'portraits-sortable-grid' : 'reportage-sortable-grid';
+                const grid = document.getElementById(gridId);
+                const introBlock = activePage.querySelector('section > div:first-child');
+
+                if (grid) {
+                    const cards = [...grid.querySelectorAll('.sortable-photo-item')];
+                    const visibleSnap = [];
+                    const margin = 120;
+
+                    cards.forEach(card => {
+                        const r = card.getBoundingClientRect();
+                        if (r.bottom >= -margin && r.top <= vh + margin && r.width > 0 && r.height > 0) {
+                            visibleSnap.push({
+                                card,
+                                left: r.left,
+                                top: r.top,
+                                width: r.width,
+                                height: r.height
+                            });
+                        }
+                    });
+
+                    let introSnap = null;
+                    if (introBlock) {
+                        const ir = introBlock.getBoundingClientRect();
+                        if (ir.bottom >= -margin && ir.top <= vh + margin) {
+                            introSnap = {
+                                el: introBlock,
+                                left: ir.left,
+                                top: ir.top,
+                                width: ir.width,
+                                height: ir.height
+                            };
+                        }
+                    }
+
+                    frozenGalleryState = {
+                        pageEl: activePage,
+                        grid,
+                        introBlock,
+                        introSnap,
+                        cards,
+                        visibleSnap
+                    };
+
+                    isViewportFilterLocked = true;
+                    document.body.classList.add('viewport-filter-locked');
+
+                    activePage.style.minHeight = '100dvh';
+                    activePage.style.height = '100dvh';
+                    activePage.style.overflow = 'hidden';
+
+                    if (introBlock) {
+                        if (introSnap) {
+                            introBlock.style.position = 'fixed';
+                            introBlock.style.left = `${introSnap.left.toFixed(1)}px`;
+                            introBlock.style.top = `${introSnap.top.toFixed(1)}px`;
+                            introBlock.style.width = `${introSnap.width.toFixed(1)}px`;
+                            introBlock.style.margin = '0';
+                        } else {
+                            introBlock.style.display = 'none';
+                        }
+                    }
+
+                    const visibleSet = new Set(visibleSnap.map(v => v.card));
+                    cards.forEach(card => {
+                        if (!visibleSet.has(card)) {
+                            card.style.display = 'none';
+                        }
+                    });
+
+                    visibleSnap.forEach(v => {
+                        v.card.style.position = 'fixed';
+                        v.card.style.left = `${v.left.toFixed(1)}px`;
+                        v.card.style.top = `${v.top.toFixed(1)}px`;
+                        v.card.style.width = `${v.width.toFixed(1)}px`;
+                        v.card.style.height = `${v.height.toFixed(1)}px`;
+                        v.card.style.margin = '0';
+                        v.card.style.maxHeight = 'none';
+                    });
+                    return;
+                }
+            }
+
+            isViewportFilterLocked = true;
+            document.body.classList.add('viewport-filter-locked');
+        }
+
+        function unlockViewportFromPixelFilter() {
+            if (!isViewportFilterLocked) return;
+            const viewport = document.getElementById('app-viewport');
+            if (viewport && (viewport.classList.contains('shutter-pixel-active') || viewport.classList.contains('lightbox-pixel-active'))) {
+                return;
+            }
+
+            const restoreY = lockedScrollY;
+            const targetCardToScroll = frozenGalleryState && frozenGalleryState.lastCenteredCard;
+
+            if (frozenGalleryState) {
+                const { pageEl, introBlock, cards } = frozenGalleryState;
+                if (pageEl) {
+                    pageEl.style.minHeight = '';
+                    pageEl.style.height = '';
+                    pageEl.style.overflow = '';
+                }
+                if (introBlock) {
+                    introBlock.style.position = '';
+                    introBlock.style.left = '';
+                    introBlock.style.top = '';
+                    introBlock.style.width = '';
+                    introBlock.style.margin = '';
+                    introBlock.style.display = '';
+                }
+                cards.forEach(card => {
+                    card.style.display = '';
+                    card.style.position = '';
+                    card.style.left = '';
+                    card.style.top = '';
+                    card.style.width = '';
+                    card.style.height = '';
+                    card.style.margin = '';
+                    const d = PHOTO_DIMS[card.dataset.photoId] || { w: 3, h: 4 };
+                    const ratio = d.w / d.h;
+                    const span = card.dataset.colSpan || '6';
+                    card.style.maxHeight = span === '12' ? '74vh' : (ratio < 0.85 ? '70vh' : '74vh');
+                });
+                frozenGalleryState = null;
+            }
+
+            isViewportFilterLocked = false;
+            document.body.classList.remove('viewport-filter-locked');
+
+            if (targetCardToScroll && document.body.contains(targetCardToScroll)) {
+                targetCardToScroll.scrollIntoView({ behavior: 'instant', block: 'center' });
+            } else {
+                window.scrollTo({ top: restoreY, behavior: 'instant' });
+            }
+        }
+
+        function centerCardInViewport(cardEl) {
+            if (!cardEl) return;
+            if (isViewportFilterLocked && frozenGalleryState) {
+                frozenGalleryState.lastCenteredCard = cardEl;
+            } else {
+                cardEl.scrollIntoView({ behavior: 'instant', block: 'center' });
+            }
         }
 
         /* ==========================================================================
@@ -1227,7 +1404,7 @@
         let desktopStdObserver = null;
         let lightboxHighTimer = null;
 
-        const MAX_CONCURRENT_STD_LOADS = 4;
+        const MAX_CONCURRENT_STD_LOADS = 3;
         let activeStdLoads = 0;
         const stdUpgradeQueue = [];
 
@@ -1373,6 +1550,9 @@
             hiLoader.src = highSrc;
         }
 
+        // Чтобы после прокрутки 60–100 фотографий браузер не держал в видеопамяти сотни 2560px текстур
+        // (из-за чего начинались лаги внизу галереи), карточки в зоне видимости получают Standard-версию,
+        // а карточки, ушедшие далеко за пределы экрана (>2600px), освобождают VRAM обратно до лёгкой Lite-версии!
         function initDesktopScrollStandardUpgrade() {
             if (desktopStdObserver) desktopStdObserver.disconnect();
             if (isMobileViewport() || !('IntersectionObserver' in window)) return;
@@ -1380,23 +1560,29 @@
             const activePageEl = document.getElementById(`page-${currentPage}`);
             if (!activePageEl || currentPage === 'home') return;
 
-            desktopStdObserver = new IntersectionObserver((entries, obs) => {
-                if (!isFastConnection) return;
+            desktopStdObserver = new IntersectionObserver((entries) => {
+                if (!isFastConnection || isViewportFilterLocked) return;
                 entries.forEach(entry => {
+                    const card = entry.target;
+                    const img = card.querySelector('img');
+                    if (!img) return;
+
                     if (entry.isIntersecting) {
-                        upgradeCardToStandardRes(entry.target);
-                        obs.unobserve(entry.target);
+                        upgradeCardToStandardRes(card);
+                    } else if (img.dataset.stdUpgraded === '1' && img.dataset.liteSrc) {
+                        const r = entry.boundingClientRect;
+                        if (r.bottom < -2400 || r.top > window.innerHeight + 2400) {
+                            img.src = img.dataset.liteSrc;
+                            delete img.dataset.stdUpgraded;
+                        }
                     }
                 });
             }, {
-                rootMargin: '420px 0px'
+                rootMargin: '350px 0px'
             });
 
             activePageEl.querySelectorAll('.sortable-photo-item').forEach(card => {
-                const img = card.querySelector('img');
-                if (img && img.dataset.stdUpgraded !== '1') {
-                    desktopStdObserver.observe(card);
-                }
+                desktopStdObserver.observe(card);
             });
         }
 
@@ -1665,9 +1851,11 @@
                 viewport.classList.remove('lightbox-pixel-active');
                 viewport.style.removeProperty('--lb-bright');
                 lastAppliedLbPixelSize = -1;
+                unlockViewportFromPixelFilter();
                 return;
             }
 
+            lockViewportForPixelFilter();
             viewport.classList.add('lightbox-pixel-active');
             const bright = (1 - 0.28 * eased).toFixed(2);
             viewport.style.setProperty('--lb-bright', bright);
@@ -1677,7 +1865,7 @@
 
             if (pixelSize !== lastAppliedLbPixelSize) {
                 lastAppliedLbPixelSize = pixelSize;
-                if (!useLightweightFilters() && flood && tileBox && dilate) {
+                if (!IS_GECKO && flood && tileBox && dilate) {
                     const halfRadius = Math.max(1, Math.floor(pixelSize / 2));
                     flood.setAttribute('x', String(halfRadius));
                     flood.setAttribute('y', String(halfRadius));
@@ -1732,6 +1920,7 @@
             if (mobileLightboxIndex < 0) return;
 
             mobileLightboxOpen = true;
+            lockViewportForPixelFilter();
             resetLightboxZoom(false);
             updateMobileLightboxSlide(false);
 
@@ -1801,7 +1990,7 @@
             }
 
             if (shouldScrollPage) {
-                item.scrollIntoView({ behavior: 'instant', block: 'center' });
+                centerCardInViewport(item);
             }
         }
 
@@ -1826,6 +2015,7 @@
             animateLightboxPixel(0, 240, () => {
                 if (!mobileLightboxOpen) {
                     document.body.classList.remove('mobile-lightbox-open');
+                    unlockViewportFromPixelFilter();
                 }
             });
         }
@@ -2109,9 +2299,11 @@
                 viewport.classList.remove('shutter-pixel-active');
                 overlay.classList.remove('active');
                 lastAppliedShutterPixelSize = -1;
+                unlockViewportFromPixelFilter();
                 return;
             }
 
+            lockViewportForPixelFilter();
             viewport.classList.add('shutter-pixel-active');
             overlay.classList.add('active');
 
@@ -2121,7 +2313,7 @@
             if (pixelSize !== lastAppliedShutterPixelSize) {
                 lastAppliedShutterPixelSize = pixelSize;
 
-                if (!useLightweightFilters() && flood && tileBox && dilate) {
+                if (!IS_GECKO && flood && tileBox && dilate) {
                     const halfRadius = Math.max(1, Math.floor(pixelSize / 2));
                     flood.setAttribute('x', String(halfRadius));
                     flood.setAttribute('y', String(halfRadius));
@@ -2218,12 +2410,28 @@
         }
 
         function applyPageVisibility(targetPage) {
+            if (isViewportFilterLocked) {
+                const viewport = document.getElementById('app-viewport');
+                const hadShutter = viewport && viewport.classList.contains('shutter-pixel-active');
+                if (hadShutter) viewport.classList.remove('shutter-pixel-active');
+                unlockViewportFromPixelFilter();
+                if (hadShutter && viewport) viewport.classList.add('shutter-pixel-active');
+            }
+
             currentPage = targetPage;
-            document.querySelectorAll('.page-view').forEach(el => el.classList.add('hidden'));
+            lockedScrollY = 0;
+            document.querySelectorAll('.page-view').forEach(el => {
+                el.classList.add('hidden');
+                el.style.transform = '';
+            });
             const activeView = document.getElementById(`page-${targetPage}`);
             if (activeView) activeView.classList.remove('hidden');
 
             window.scrollTo({ top: 0, behavior: 'instant' });
+            if (document.getElementById('app-viewport').classList.contains('shutter-pixel-active')) {
+                lockViewportForPixelFilter();
+            }
+
             requestAnimationFrame(() => {
                 if (window.remeasureTiltRects) window.remeasureTiltRects();
                 initDesktopScrollStandardUpgrade();
