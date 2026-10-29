@@ -51,8 +51,6 @@
         }
 
         /* ==================== КОНТЕЙНЕР САЙТА И ЭФФЕКТ ПИКСЕЛИЗАЦИИ ЗАТВОРА ==================== */
-        /* Важно для Firefox/LibreWolf: не держим постоянный will-change: filter в покое,
-           чтобы движок Gecko не загонял всю страницу в программный буфер при скролле */
         #app-viewport {
             transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1);
         }
@@ -67,14 +65,17 @@
             filter: url(#mobile-lightbox-pixel-filter) brightness(var(--lb-bright, 1)) contrast(1.08);
         }
 
-        /* На Firefox/LibreWolf сложный SVG feTile+feMorphology на весь документ рендерится на CPU,
-           поэтому используем аппаратно-ускоренный фильтр и чёткую пиксельную сетку оверлея (60 FPS) */
-        html.is-gecko #app-viewport.shutter-pixel-active {
+        /* Аппаратное ускорение для Firefox/LibreWolf и мобильных GPU:
+           SVG feTile+feMorphology на весь документ рендерится на CPU, поэтому на Gecko и тач-экранах
+           включаем GPU-фильтр с чёткой пиксельной сеткой оверлея — даёт стабильные 60-120 FPS без лагов */
+        html.is-gecko #app-viewport.shutter-pixel-active,
+        html.is-mobile-device #app-viewport.shutter-pixel-active {
             filter: contrast(1.12);
         }
 
-        html.is-gecko #app-viewport.lightbox-pixel-active {
-            filter: brightness(var(--lb-bright, 0.72)) contrast(1.08) blur(2.5px);
+        html.is-gecko #app-viewport.lightbox-pixel-active,
+        html.is-mobile-device #app-viewport.lightbox-pixel-active {
+            filter: brightness(var(--lb-bright, 0.72)) contrast(1.08) blur(2px);
         }
 
         body.mobile-lightbox-open #app-viewport {
@@ -135,7 +136,7 @@
             }
         }
 
-        /* Эталонная геометрия MacBook 14" (соотношение экрана 16:10 / ~1.54, с шапкой браузера ~1.65–1.74) */
+        /* Эталонная геометрия с ratnejal.ru (включается на десктопных окнах браузера, включая MacBook) */
         @media (min-width: 640px) and (min-aspect-ratio: 163 / 100) {
             #hero-me-transform-box {
                 transform: translate3d(calc(var(--me-x) - 3%), var(--me-y), 0) scale(calc(var(--me-scale) * 0.91));
@@ -168,69 +169,45 @@
             }
         }
 
-        /* Специальная калибровка ТОЛЬКО для широкоформатных экранов 16:9 (HP Omen 17 и др. Windows-ноутбуки).
-           Срабатывает и через медиа-запрос, и через точный JS-детектор физических пропорций монитора (.widescreen-16-9),
-           даже если в Windows открыта боковая панель или высокая панель задач. MacBook 14" (ratio ~1.54) НЕ затрагивается! */
-        @media (min-width: 640px) and (min-aspect-ratio: 176 / 100) {
+        /* Сдвиг правой колонки ВЫШЕ и калибровка карточек ТОЛЬКО для широкоформатных экранов 16:9 (HP Omen 17 и др.).
+           На MacBook 14" физический экран ~1.54 (16:10), а рабочая область окна < 1.80, поэтому MacBook НЕ затрагивается вообще! */
+        @media (min-width: 640px) and (min-aspect-ratio: 180 / 100) {
             .hero-content-col {
-                padding-bottom: 19vh !important;
-                padding-left: clamp(4.5rem, 8.5vw, 10.5rem) !important;
-            }
-            .hero-inner-box {
-                max-width: min(38rem, 44vw) !important;
-                transform: translateY(-2.5vh);
+                padding-bottom: 18vh !important;
+                padding-left: clamp(5.5rem, 9.5vw, 11rem) !important;
             }
             .hero-title-desktop {
-                font-size: clamp(2rem, 5.3vh, 3.15rem) !important;
-                line-height: 1.22 !important;
-                margin-bottom: clamp(1.4rem, 4.4vh, 2.85rem) !important;
+                font-size: clamp(1.9rem, 5.2vh, 3.05rem) !important;
+                margin-bottom: clamp(1.25rem, 4vh, 2.6rem) !important;
             }
             .hero-sub-desktop {
-                font-size: clamp(1.05rem, 2.35vh, 1.3rem) !important;
-                margin-bottom: clamp(0.85rem, 2.3vh, 1.6rem) !important;
+                font-size: clamp(1rem, 2.3vh, 1.28rem) !important;
             }
             #card-portraits,
             #card-reportage {
-                height: clamp(142px, 23.8vh, 224px) !important;
-            }
-            #card-reportage {
-                margin-top: clamp(1.35rem, 4.4vh, 2.65rem) !important;
+                height: clamp(134px, 23.5vh, 215px) !important;
             }
         }
 
         @media (min-width: 640px) {
-            html.widescreen-16-9 #hero-me-transform-box {
-                transform: translate3d(calc(var(--me-x) - 3%), var(--me-y), 0) scale(calc(var(--me-scale) * 0.91));
-            }
             html.widescreen-16-9 .hero-content-col {
-                padding-bottom: 19vh !important;
-                padding-left: clamp(4.5rem, 8.5vw, 10.5rem) !important;
-            }
-            html.widescreen-16-9 .hero-inner-box {
-                max-width: min(38rem, 44vw) !important;
-                transform: translateY(-2.5vh);
+                padding-bottom: 18vh !important;
+                padding-left: clamp(5.5rem, 9.5vw, 11rem) !important;
             }
             html.widescreen-16-9 .hero-title-desktop {
-                font-size: clamp(2rem, 5.3vh, 3.15rem) !important;
-                line-height: 1.22 !important;
-                margin-bottom: clamp(1.4rem, 4.4vh, 2.85rem) !important;
+                font-size: clamp(1.9rem, 5.2vh, 3.05rem) !important;
+                margin-bottom: clamp(1.25rem, 4vh, 2.6rem) !important;
             }
             html.widescreen-16-9 .hero-sub-desktop {
-                font-size: clamp(1.05rem, 2.35vh, 1.3rem) !important;
-                margin-bottom: clamp(0.85rem, 2.3vh, 1.6rem) !important;
-            }
-            html.widescreen-16-9 .hero-cards-desktop {
-                gap: clamp(1rem, 2vw, 2rem) !important;
+                font-size: clamp(1rem, 2.3vh, 1.28rem) !important;
             }
             html.widescreen-16-9 #card-portraits,
             html.widescreen-16-9 #card-reportage {
-                height: clamp(142px, 23.8vh, 224px) !important;
-            }
-            html.widescreen-16-9 #card-reportage {
-                margin-top: clamp(1.35rem, 4.4vh, 2.65rem) !important;
+                height: clamp(134px, 23.5vh, 215px) !important;
             }
         }
 
+        /* ==================== МОБИЛЬНАЯ КОМПОЗИЦИЯ (100% ИДЕНТИЧНА ИСХОДНОМУ INDEX.HTML) ==================== */
         @media (max-width: 639px) {
             #page-home {
                 height: 100dvh;
@@ -345,7 +322,7 @@
             cursor: grabbing;
         }
 
-        /* Важно: без will-change: transform, чтобы браузер не запекал низкополигональную GPU-текстуру
+        /* Важно: без постоянного will-change: transform, чтобы браузер не запекал мыльную GPU-текстуру
            и при сильном зуме (scale > 1) отрисовывал все пиксели загруженной high-версии */
         #mobile-lightbox-img {
             max-width: 90vw;
@@ -477,8 +454,10 @@
             bottom: 220px;
         }
 
-        /* Оптимизировано для Firefox/LibreWolf: убираем глобальный perspective у всей гигантской сетки
-           и включаем will-change только на той карточке, над которой сейчас находится курсор */
+        .steam-card-wrapper {
+            perspective: 1100px;
+        }
+
         .steam-card {
             position: relative;
             backface-visibility: hidden;
@@ -492,13 +471,11 @@
             z-index: 25;
         }
 
-        /* Изоляция слоёв карточек галереи для мгновенного скролла без фризов */
+        /* Изоляция слоёв карточек галереи без content-visibility, чтобы не вызывать скачков высоты при скролле */
         .sortable-photo-item {
             contain: layout paint;
         }
 
-        /* Делаем все внутренние декоративные слои карточки прозрачными для клика мыши,
-           чтобы клик по самому краю карточки (даже при 3D-наклоне) всегда срабатывал */
         .steam-card > *:not(.delete-photo-btn):not(.size-toggle-btn) {
             pointer-events: none;
         }
@@ -513,8 +490,6 @@
             mix-blend-mode: overlay;
         }
 
-        /* В Firefox/LibreWolf mix-blend-mode: overlay внутри 3D-трансформируемой карточки вызывает
-           тяжёлый пересчёт при каждом движении мыши — используем чистый аппаратный альфа-блик */
         html.is-gecko .steam-glare {
             mix-blend-mode: normal;
         }
@@ -603,8 +578,7 @@
         }
     </style>
     <script>
-        /* Мгновенное определение движка Gecko (Firefox / LibreWolf) и геометрии 16:9 (HP Omen 17)
-           ещё до первой отрисовки кадра, чтобы не было ни малейшего скачка макета */
+        /* Мгновенное определение движка Gecko (Firefox / LibreWolf), мобильного тач-экрана и физического монитора 16:9 (HP Omen 17) */
         (function() {
             const ua = navigator.userAgent || '';
             if (/Firefox|FxiOS|LibreWolf|Gecko\//i.test(ua) && !/Chrome|Chromium|Edg|OPR/i.test(ua)) {
@@ -612,6 +586,9 @@
             }
 
             function syncDisplayGeometryClass() {
+                const isMobile = window.innerWidth < 640 || /Android|iPhone|iPad|iPod/i.test(ua);
+                document.documentElement.classList.toggle('is-mobile-device', isMobile);
+
                 if (window.innerWidth < 640) {
                     document.documentElement.classList.remove('widescreen-16-9');
                     return;
@@ -621,9 +598,10 @@
                 const screenRatio = sw / Math.max(sh, 1);
                 const viewportRatio = window.innerWidth / Math.max(window.innerHeight, 1);
 
-                // На MacBook 14" (3024x1964 / 1512x982) screenRatio = 1.54, viewportRatio ~ 1.68..1.74 -> НЕ срабатывает.
-                // На HP Omen 17 и других 16:9 экранах (1920x1080 / 2560x1440) screenRatio = 1.777 -> срабатывает точно!
-                const isWide16by9 = (screenRatio >= 1.72 && viewportRatio >= 1.58) || viewportRatio >= 1.76;
+                // ВАЖНО: проверяем ТОЛЬКО физический экран монитора (screenRatio >= 1.72, т.е. 16:9 = 1.777).
+                // На MacBook 14" screenRatio всегда равен 1.54 (16:10), поэтому MacBook НИКОГДА не получит класс widescreen-16-9,
+                // даже если окно браузера сплюснуто по высоте до viewportRatio 1.77..1.79!
+                const isWide16by9 = screenRatio >= 1.72 && viewportRatio >= 1.63;
                 document.documentElement.classList.toggle('widescreen-16-9', isWide16by9);
             }
 
@@ -1238,6 +1216,10 @@
             return window.innerWidth < 640;
         }
 
+        function useLightweightFilters() {
+            return IS_GECKO || isMobileViewport();
+        }
+
         /* ==========================================================================
            УМНАЯ 3-ЭТАПНАЯ ПОДГРУЗКА ФОТО (LITE -> STANDARD -> HIGH) С ПУЛОМ ОЧЕРЕДИ
            ========================================================================== */
@@ -1245,8 +1227,6 @@
         let desktopStdObserver = null;
         let lightboxHighTimer = null;
 
-        // Ограничитель одновременных фоновых декодирований Standard-версий,
-        // чтобы при резком скролле не забивать сеть и не мешать мгновенной загрузке High в лайтбоксе
         const MAX_CONCURRENT_STD_LOADS = 4;
         let activeStdLoads = 0;
         const stdUpgradeQueue = [];
@@ -1295,7 +1275,6 @@
             const loader = new Image();
             loader.decoding = 'async';
             loader.onload = () => {
-                // decode() декодирует WebP в фоновом потоке до вставки в DOM (убирает микро-фризы в Firefox и Chrome)
                 if (typeof loader.decode === 'function') {
                     loader.decode().then(() => finishStdLoad(stdSrc, true)).catch(() => finishStdLoad(stdSrc, true));
                 } else {
@@ -1308,7 +1287,6 @@
             loader.src = stdSrc;
         }
 
-        // Переключает карточку с lite на обычную версию (Standard) с приоритетом для лайтбокса
         function upgradeCardToStandardRes(cardEl, onComplete, highPriority = false) {
             if (!cardEl) return;
             const img = cardEl.querySelector('img');
@@ -1326,7 +1304,6 @@
                 return;
             }
 
-            // Если запрос из открытого лайтбокса — запускаем немедленно вне очереди
             if (highPriority) {
                 const qIdx = stdUpgradeQueue.indexOf(cardEl);
                 if (qIdx !== -1) stdUpgradeQueue.splice(qIdx, 1);
@@ -1340,7 +1317,6 @@
             processStdUpgradeQueue();
         }
 
-        // Подгружает третью ступень (супер-качество из папки high/) для открытого Lightbox
         function loadHighResForLightbox(cardEl, onComplete) {
             if (!cardEl) return;
             const img = cardEl.querySelector('img');
@@ -1370,9 +1346,6 @@
                 delete img.dataset.highLoading;
                 if (success) {
                     img.dataset.highLoaded = '1';
-                    // Если карточка на странице тоже видна, ставим ей уже скачанный в кэш браузера high-исходник
-                    img.src = resolvedSrc;
-                    img.dataset.stdUpgraded = '1';
                 } else {
                     img.dataset.highFailed = '1';
                 }
@@ -1393,7 +1366,6 @@
                 }
             };
             hiLoader.onerror = () => {
-                // Если для конкретного кадра в папке high/ нет файла, гарантированно отдаём standard-версию
                 upgradeCardToStandardRes(cardEl, (stdUrl) => {
                     finishHighLoad(stdUrl, false);
                 }, true);
@@ -1401,11 +1373,9 @@
             hiLoader.src = highSrc;
         }
 
-        // На ноутбуках, ПК и телефонах с быстрым интернетом по мере скролла галереи
-        // заранее апгрейдит только карточки на активной видимой странице с lite до standard
         function initDesktopScrollStandardUpgrade() {
             if (desktopStdObserver) desktopStdObserver.disconnect();
-            if (!('IntersectionObserver' in window)) return;
+            if (isMobileViewport() || !('IntersectionObserver' in window)) return;
 
             const activePageEl = document.getElementById(`page-${currentPage}`);
             if (!activePageEl || currentPage === 'home') return;
@@ -1419,7 +1389,7 @@
                     }
                 });
             }, {
-                rootMargin: isMobileViewport() ? '240px 0px' : '500px 0px'
+                rootMargin: '420px 0px'
             });
 
             activePageEl.querySelectorAll('.sortable-photo-item').forEach(card => {
@@ -1489,7 +1459,7 @@
         }
 
         /* ==========================================================================
-           1. ЭФФЕКТ КАРТОЧЕК STEAM + СФЕРА РАЗБЛЮРА (С RAF-ТРОТТЛИНГОМ ДЛЯ FIREFOX)
+           1. ЭФФЕКТ КАРТОЧЕК STEAM + СФЕРА РАЗБЛЮРА (С RAF-ТРОТТЛИНГОМ И БЕЗ REFLOW НА СКРОЛЛЕ)
            ========================================================================== */
         function applyCardTiltAndLens(card, clientX, clientY) {
             const glare = card.querySelector('.steam-glare');
@@ -1508,7 +1478,6 @@
             card.style.transform = `perspective(1000px) rotateX(${rotateX.toFixed(2)}deg) rotateY(${rotateY.toFixed(2)}deg) scale3d(1.025, 1.025, 1.025) translateY(-3px)`;
             card.style.boxShadow = `${-rotateY * 1.1}px ${rotateX * 1.1 + 14}px 28px rgba(0,0,0,0.14)`;
 
-            // Координаты маски-линзы нужны только карточкам разделов на главной
             if (card.id === 'card-portraits' || card.id === 'card-reportage') {
                 card.style.setProperty('--lens-x', `${x.toFixed(1)}px`);
                 card.style.setProperty('--lens-y', `${y.toFixed(1)}px`);
@@ -1539,15 +1508,12 @@
             let mouseMoveRaf = null;
             let pendingX = 0;
             let pendingY = 0;
-            let scrollMeasureRaf = null;
 
             const inside = (r, x, y, margin) =>
                 r && r.width > 0 && r.height > 0 &&
                 x >= r.left - margin && x <= r.right + margin &&
                 y >= r.top - margin && y <= r.bottom + margin;
 
-            // Вместо обхода 125 карточек через getBoundingClientRect() на каждый шаг мыши
-            // используем быстрый нативный хит-тест браузера elementFromPoint + гистерезис 22px по краям
             const findCardUnderCursor = (clientX, clientY) => {
                 if (hoveredCard && document.body.contains(hoveredCard)) {
                     const r = hoveredCard._restRect;
@@ -1569,7 +1535,6 @@
                 candidate._restRect = candidate.getBoundingClientRect();
                 hoveredCard = candidate;
 
-                // Когда пользователь навёл мышь на карточку в галерее, сразу поднимаем ей приоритет Standard
                 if (candidate.classList.contains('sortable-photo-item')) {
                     upgradeCardToStandardRes(candidate, null, true);
                 }
@@ -1596,36 +1561,16 @@
                 });
             }, { passive: true });
 
-            // На скролле пересчитываем геометрию ТОЛЬКО для текущей карточки под курсором (ноль нагрузки на все 125 карточек)
-            const updateHoveredRectOnScroll = () => {
-                scrollMeasureRaf = null;
-                if (hoveredCard && document.body.contains(hoveredCard)) {
-                    const old = hoveredCard._restRect;
-                    const fresh = hoveredCard.getBoundingClientRect();
-                    if (old) {
-                        hoveredCard._restRect = {
-                            left: fresh.left,
-                            top: fresh.top,
-                            width: old.width,
-                            height: old.height,
-                            right: fresh.left + old.width,
-                            bottom: fresh.top + old.height
-                        };
-                    } else {
-                        hoveredCard._restRect = fresh;
-                    }
+            const onViewportScrollOrResize = () => {
+                if (hoveredCard) {
+                    resetCardTilt(hoveredCard);
+                    hoveredCard = null;
                 }
             };
 
-            const scheduleRectUpdate = () => {
-                if (!scrollMeasureRaf) {
-                    scrollMeasureRaf = requestAnimationFrame(updateHoveredRectOnScroll);
-                }
-            };
-
-            window.addEventListener('resize', scheduleRectUpdate, { passive: true });
-            window.addEventListener('scroll', scheduleRectUpdate, { passive: true });
-            window.remeasureTiltRects = scheduleRectUpdate;
+            window.addEventListener('resize', onViewportScrollOrResize, { passive: true });
+            window.addEventListener('scroll', onViewportScrollOrResize, { passive: true });
+            window.remeasureTiltRects = onViewportScrollOrResize;
             window.getCurrentHoveredCard = () => hoveredCard;
 
             document.addEventListener('touchstart', (e) => {
@@ -1657,7 +1602,7 @@
         }
 
         /* ==========================================================================
-           1.5. ПРОСМОТРЩИК (LIGHTBOX): БЕЗУПРЕЧНАЯ ПОДГРУЗКА (LITE -> STANDARD -> HIGH)
+           1.5. ПРОСМОТРЩИК (LIGHTBOX): ПОЭТАПНАЯ ПОДГРУЗКА (LITE -> STANDARD -> HIGH)
            ========================================================================== */
         let mobileLightboxOpen = false;
         let mobileLightboxItems = [];
@@ -1732,7 +1677,7 @@
 
             if (pixelSize !== lastAppliedLbPixelSize) {
                 lastAppliedLbPixelSize = pixelSize;
-                if (!IS_GECKO && flood && tileBox && dilate) {
+                if (!useLightweightFilters() && flood && tileBox && dilate) {
                     const halfRadius = Math.max(1, Math.floor(pixelSize / 2));
                     flood.setAttribute('x', String(halfRadius));
                     flood.setAttribute('y', String(halfRadius));
@@ -1816,18 +1761,15 @@
             if (imgInside && lbImg) {
                 delete lbImg.dataset.showingHigh;
 
-                // Если для этого кадра уже загружена high-версия, ставим её мгновенно
                 if (imgInside.dataset.highLoaded === '1' && imgInside.dataset.highSrc) {
                     lbImg.dataset.showingHigh = '1';
                     lbImg.src = imgInside.dataset.highSrc;
                 } else {
-                    // Шаг 1: мгновенно отображаем лучшее из того, что уже декодировано в карточке
                     const initialSrc = (imgInside.dataset.stdUpgraded === '1' && imgInside.dataset.stdSrc)
                         ? imgInside.dataset.stdSrc
                         : imgInside.src;
                     lbImg.src = initialSrc;
 
-                    // Шаг 2: с высшим приоритетом (вне очереди скролла) подгружаем Standard-версию
                     upgradeCardToStandardRes(item, (stdSrc) => {
                         if (!mobileLightboxOpen || mobileLightboxIndex !== activeIndex) return;
                         if (lbImg.dataset.showingHigh !== '1' && stdSrc) {
@@ -1835,19 +1777,17 @@
                         }
                     }, true);
 
-                    // Шаг 3: сразу запускаем подгрузку максимальной High-версии (с фоновым decode() без лагов)
                     lightboxHighTimer = setTimeout(() => {
                         if (!mobileLightboxOpen || mobileLightboxIndex !== activeIndex) return;
                         ensureCurrentSlideHighRes();
-                    }, 35);
+                    }, 45);
                 }
 
-                // Предзагружаем соседние слайды (и Standard, и High для следующего кадра на быстром соединении)
                 const nextItem = mobileLightboxItems[(activeIndex + 1) % mobileLightboxItems.length];
                 const prevItem = mobileLightboxItems[(activeIndex - 1 + mobileLightboxItems.length) % mobileLightboxItems.length];
                 if (nextItem) {
                     upgradeCardToStandardRes(nextItem, () => {
-                        if (isFastConnection && mobileLightboxOpen) {
+                        if (isFastConnection && mobileLightboxOpen && !isMobileViewport()) {
                             loadHighResForLightbox(nextItem);
                         }
                     }, true);
@@ -1861,9 +1801,7 @@
             }
 
             if (shouldScrollPage) {
-                // Используем 'auto' вместо 'smooth', чтобы во время листания лайтбокса
-                // фоновая прокрутка страницы под фильтром не вызывала перерисовку в браузерах
-                item.scrollIntoView({ behavior: 'auto', block: 'center' });
+                item.scrollIntoView({ behavior: 'instant', block: 'center' });
             }
         }
 
@@ -2150,7 +2088,6 @@
             const pin3X = pinBaseX + x3 - 28;
             const pin3Y = y3 + vh * 0.18;
 
-            // Перемещаем группы заклёпок через быстрый SVG-трансформ вместо 12 вызовов setAttribute на каждый кадр
             const updatePinGroup = (groupId, px, py) => {
                 const g = document.getElementById(groupId);
                 if (g) g.setAttribute('transform', `translate(${px.toFixed(1)}, ${py.toFixed(1)})`);
@@ -2184,7 +2121,7 @@
             if (pixelSize !== lastAppliedShutterPixelSize) {
                 lastAppliedShutterPixelSize = pixelSize;
 
-                if (!IS_GECKO && flood && tileBox && dilate) {
+                if (!useLightweightFilters() && flood && tileBox && dilate) {
                     const halfRadius = Math.max(1, Math.floor(pixelSize / 2));
                     flood.setAttribute('x', String(halfRadius));
                     flood.setAttribute('y', String(halfRadius));
