@@ -51,17 +51,30 @@
         }
 
         /* ==================== КОНТЕЙНЕР САЙТА И ЭФФЕКТ ПИКСЕЛИЗАЦИИ ЗАТВОРА ==================== */
+        /* Важно для Firefox/LibreWolf: не держим постоянный will-change: filter в покое,
+           чтобы движок Gecko не загонял всю страницу в программный буфер при скролле */
         #app-viewport {
             transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1);
-            will-change: filter;
         }
 
         #app-viewport.shutter-pixel-active {
+            will-change: filter;
             filter: url(#shutter-pixelate-filter) contrast(1.08);
         }
 
         #app-viewport.lightbox-pixel-active {
+            will-change: filter;
             filter: url(#mobile-lightbox-pixel-filter) brightness(var(--lb-bright, 1)) contrast(1.08);
+        }
+
+        /* На Firefox/LibreWolf сложный SVG feTile+feMorphology на весь документ рендерится на CPU,
+           поэтому используем аппаратно-ускоренный фильтр и чёткую пиксельную сетку оверлея (60 FPS) */
+        html.is-gecko #app-viewport.shutter-pixel-active {
+            filter: contrast(1.12);
+        }
+
+        html.is-gecko #app-viewport.lightbox-pixel-active {
+            filter: brightness(var(--lb-bright, 0.72)) contrast(1.08) blur(2.5px);
         }
 
         body.mobile-lightbox-open #app-viewport {
@@ -122,7 +135,7 @@
             }
         }
 
-        /* Эталонная геометрия с ratnejal.ru (включается на десктопных окнах браузера, включая MacBook) */
+        /* Эталонная геометрия MacBook 14" (соотношение экрана 16:10 / ~1.54, с шапкой браузера ~1.65–1.74) */
         @media (min-width: 640px) and (min-aspect-ratio: 163 / 100) {
             #hero-me-transform-box {
                 transform: translate3d(calc(var(--me-x) - 3%), var(--me-y), 0) scale(calc(var(--me-scale) * 0.91));
@@ -155,12 +168,66 @@
             }
         }
 
-        /* Сдвиг правой колонки ВЫШЕ и ПРАВЕЕ только для широкоформатных Windows-экранов 16:9
-           (соотношение рабочей области окна на 16:9 с шапкой браузера = 1.80..1.92; на MacBook 14" оно ~1.75 и не затрагивается) */
-        @media (min-width: 640px) and (min-aspect-ratio: 180 / 100) {
+        /* Специальная калибровка ТОЛЬКО для широкоформатных экранов 16:9 (HP Omen 17 и др. Windows-ноутбуки).
+           Срабатывает и через медиа-запрос, и через точный JS-детектор физических пропорций монитора (.widescreen-16-9),
+           даже если в Windows открыта боковая панель или высокая панель задач. MacBook 14" (ratio ~1.54) НЕ затрагивается! */
+        @media (min-width: 640px) and (min-aspect-ratio: 176 / 100) {
             .hero-content-col {
-                padding-bottom: 15vh !important;
-                padding-left: clamp(5.5rem, 9.5vw, 11rem) !important;
+                padding-bottom: 19vh !important;
+                padding-left: clamp(4.5rem, 8.5vw, 10.5rem) !important;
+            }
+            .hero-inner-box {
+                max-width: min(38rem, 44vw) !important;
+                transform: translateY(-2.5vh);
+            }
+            .hero-title-desktop {
+                font-size: clamp(2rem, 5.3vh, 3.15rem) !important;
+                line-height: 1.22 !important;
+                margin-bottom: clamp(1.4rem, 4.4vh, 2.85rem) !important;
+            }
+            .hero-sub-desktop {
+                font-size: clamp(1.05rem, 2.35vh, 1.3rem) !important;
+                margin-bottom: clamp(0.85rem, 2.3vh, 1.6rem) !important;
+            }
+            #card-portraits,
+            #card-reportage {
+                height: clamp(142px, 23.8vh, 224px) !important;
+            }
+            #card-reportage {
+                margin-top: clamp(1.35rem, 4.4vh, 2.65rem) !important;
+            }
+        }
+
+        @media (min-width: 640px) {
+            html.widescreen-16-9 #hero-me-transform-box {
+                transform: translate3d(calc(var(--me-x) - 3%), var(--me-y), 0) scale(calc(var(--me-scale) * 0.91));
+            }
+            html.widescreen-16-9 .hero-content-col {
+                padding-bottom: 19vh !important;
+                padding-left: clamp(4.5rem, 8.5vw, 10.5rem) !important;
+            }
+            html.widescreen-16-9 .hero-inner-box {
+                max-width: min(38rem, 44vw) !important;
+                transform: translateY(-2.5vh);
+            }
+            html.widescreen-16-9 .hero-title-desktop {
+                font-size: clamp(2rem, 5.3vh, 3.15rem) !important;
+                line-height: 1.22 !important;
+                margin-bottom: clamp(1.4rem, 4.4vh, 2.85rem) !important;
+            }
+            html.widescreen-16-9 .hero-sub-desktop {
+                font-size: clamp(1.05rem, 2.35vh, 1.3rem) !important;
+                margin-bottom: clamp(0.85rem, 2.3vh, 1.6rem) !important;
+            }
+            html.widescreen-16-9 .hero-cards-desktop {
+                gap: clamp(1rem, 2vw, 2rem) !important;
+            }
+            html.widescreen-16-9 #card-portraits,
+            html.widescreen-16-9 #card-reportage {
+                height: clamp(142px, 23.8vh, 224px) !important;
+            }
+            html.widescreen-16-9 #card-reportage {
+                margin-top: clamp(1.35rem, 4.4vh, 2.65rem) !important;
             }
         }
 
@@ -313,7 +380,6 @@
             left: -18vw;
             width: 136vw;
             height: 42vh;
-            will-change: transform;
             transform: translate3d(0, -130vh, 0);
             box-shadow: 0 12px 32px rgba(0, 0, 0, 0.6);
             border-bottom: 1px solid rgba(255, 255, 255, 0.09);
@@ -335,6 +401,7 @@
 
         #lamellar-shutter.active .xt4-blade {
             visibility: visible;
+            will-change: transform;
         }
 
         #xt4-mechanism-svg {
@@ -410,15 +477,24 @@
             bottom: 220px;
         }
 
-        .steam-card-wrapper {
-            perspective: 1100px;
-        }
-
+        /* Оптимизировано для Firefox/LibreWolf: убираем глобальный perspective у всей гигантской сетки
+           и включаем will-change только на той карточке, над которой сейчас находится курсор */
         .steam-card {
             position: relative;
-            transform-style: preserve-3d;
+            backface-visibility: hidden;
+            -webkit-backface-visibility: hidden;
             transition: transform 0.16s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.2s ease;
+        }
+
+        .steam-card.tilt-active,
+        .steam-card.touch-lens-active {
             will-change: transform, box-shadow;
+            z-index: 25;
+        }
+
+        /* Изоляция слоёв карточек галереи для мгновенного скролла без фризов */
+        .sortable-photo-item {
+            contain: layout paint;
         }
 
         /* Делаем все внутренние декоративные слои карточки прозрачными для клика мыши,
@@ -437,6 +513,12 @@
             mix-blend-mode: overlay;
         }
 
+        /* В Firefox/LibreWolf mix-blend-mode: overlay внутри 3D-трансформируемой карточки вызывает
+           тяжёлый пересчёт при каждом движении мыши — используем чистый аппаратный альфа-блик */
+        html.is-gecko .steam-glare {
+            mix-blend-mode: normal;
+        }
+
         /* ==================== СЕТКА 6x3 В КАРТОЧКАХ И ЛИНЗА РАЗБЛЮРА ==================== */
         .card-grid-6x3 {
             display: grid;
@@ -452,6 +534,7 @@
             inset: 0;
             opacity: 0.24;
             filter: blur(5px) grayscale(35%);
+            transform: translateZ(0);
             pointer-events: none;
             transition: opacity 0.3s ease;
         }
@@ -466,7 +549,8 @@
             position: absolute;
             inset: 0;
             opacity: 0;
-            filter: blur(0px) contrast(1.06);
+            filter: contrast(1.06);
+            transform: translateZ(0);
             pointer-events: none;
             transition: opacity 0.25s ease;
             -webkit-mask-image: radial-gradient(circle 82px at var(--lens-x, 50%) var(--lens-y, 50%), rgba(0,0,0,1) 0%, rgba(0,0,0,0.65) 55%, rgba(0,0,0,0) 100%);
@@ -518,6 +602,35 @@
             cursor: text;
         }
     </style>
+    <script>
+        /* Мгновенное определение движка Gecko (Firefox / LibreWolf) и геометрии 16:9 (HP Omen 17)
+           ещё до первой отрисовки кадра, чтобы не было ни малейшего скачка макета */
+        (function() {
+            const ua = navigator.userAgent || '';
+            if (/Firefox|FxiOS|LibreWolf|Gecko\//i.test(ua) && !/Chrome|Chromium|Edg|OPR/i.test(ua)) {
+                document.documentElement.classList.add('is-gecko');
+            }
+
+            function syncDisplayGeometryClass() {
+                if (window.innerWidth < 640) {
+                    document.documentElement.classList.remove('widescreen-16-9');
+                    return;
+                }
+                const sw = (window.screen && window.screen.width) ? window.screen.width : window.innerWidth;
+                const sh = (window.screen && window.screen.height) ? window.screen.height : window.innerHeight;
+                const screenRatio = sw / Math.max(sh, 1);
+                const viewportRatio = window.innerWidth / Math.max(window.innerHeight, 1);
+
+                // На MacBook 14" (3024x1964 / 1512x982) screenRatio = 1.54, viewportRatio ~ 1.68..1.74 -> НЕ срабатывает.
+                // На HP Omen 17 и других 16:9 экранах (1920x1080 / 2560x1440) screenRatio = 1.777 -> срабатывает точно!
+                const isWide16by9 = (screenRatio >= 1.72 && viewportRatio >= 1.58) || viewportRatio >= 1.76;
+                document.documentElement.classList.toggle('widescreen-16-9', isWide16by9);
+            }
+
+            syncDisplayGeometryClass();
+            window.addEventListener('resize', syncDisplayGeometryClass, { passive: true });
+        })();
+    </script>
 </head>
 <body>
 
@@ -558,7 +671,7 @@
         </button>
 
         <div id="mobile-lightbox-stage">
-            <img id="mobile-lightbox-img" src="" alt="" decoding="sync" draggable="false" oncontextmenu="return false;" />
+            <img id="mobile-lightbox-img" src="" alt="" decoding="async" draggable="false" oncontextmenu="return false;" />
         </div>
 
         <div class="fixed bottom-6 left-0 right-0 flex items-center justify-center gap-5 z-50 px-6" onclick="event.stopPropagation()">
@@ -761,6 +874,7 @@
            НАСТРОЙКА ЗАТВОРА, ТЕКСТОВ И КАТАЛОГА ФОТОГРАФИЙ
            ========================================================================== */
         const SHUTTER_MODE = 'lamellar';
+        const IS_GECKO = document.documentElement.classList.contains('is-gecko');
         let currentPage = 'home';
         let isShutterAnimating = false;
 
@@ -1125,11 +1239,17 @@
         }
 
         /* ==========================================================================
-           УМНАЯ 3-ЭТАПНАЯ ПОДГРУЗКА ФОТО (LITE -> STANDARD -> HIGH)
+           УМНАЯ 3-ЭТАПНАЯ ПОДГРУЗКА ФОТО (LITE -> STANDARD -> HIGH) С ПУЛОМ ОЧЕРЕДИ
            ========================================================================== */
         let isFastConnection = true;
         let desktopStdObserver = null;
         let lightboxHighTimer = null;
+
+        // Ограничитель одновременных фоновых декодирований Standard-версий,
+        // чтобы при резком скролле не забивать сеть и не мешать мгновенной загрузке High в лайтбоксе
+        const MAX_CONCURRENT_STD_LOADS = 4;
+        let activeStdLoads = 0;
+        const stdUpgradeQueue = [];
 
         function detectNetworkQuality() {
             const conn = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
@@ -1142,8 +1262,54 @@
             isFastConnection = true;
         }
 
-        // Переключает карточку с lite на обычную версию (Standard) с поддержкой очереди колбэков
-        function upgradeCardToStandardRes(cardEl, onComplete) {
+        function processStdUpgradeQueue() {
+            while (activeStdLoads < MAX_CONCURRENT_STD_LOADS && stdUpgradeQueue.length > 0) {
+                const nextCard = stdUpgradeQueue.shift();
+                if (!nextCard || !document.body.contains(nextCard)) continue;
+                const img = nextCard.querySelector('img');
+                if (!img || img.dataset.stdUpgraded === '1' || img.dataset.stdUpgrading === '1') continue;
+                runStandardUpgradeForCard(nextCard, img);
+            }
+        }
+
+        function runStandardUpgradeForCard(cardEl, img) {
+            const stdSrc = img.dataset.stdSrc;
+            if (!stdSrc) return;
+
+            img.dataset.stdUpgrading = '1';
+            activeStdLoads += 1;
+
+            const finishStdLoad = (finalSrc, markUpgraded) => {
+                if (markUpgraded) {
+                    img.src = finalSrc;
+                    img.dataset.stdUpgraded = '1';
+                }
+                delete img.dataset.stdUpgrading;
+                activeStdLoads = Math.max(0, activeStdLoads - 1);
+                const cbs = cardEl._stdCallbacks || [];
+                cardEl._stdCallbacks = [];
+                cbs.forEach(cb => cb(finalSrc));
+                processStdUpgradeQueue();
+            };
+
+            const loader = new Image();
+            loader.decoding = 'async';
+            loader.onload = () => {
+                // decode() декодирует WebP в фоновом потоке до вставки в DOM (убирает микро-фризы в Firefox и Chrome)
+                if (typeof loader.decode === 'function') {
+                    loader.decode().then(() => finishStdLoad(stdSrc, true)).catch(() => finishStdLoad(stdSrc, true));
+                } else {
+                    finishStdLoad(stdSrc, true);
+                }
+            };
+            loader.onerror = () => {
+                finishStdLoad(img.src, false);
+            };
+            loader.src = stdSrc;
+        }
+
+        // Переключает карточку с lite на обычную версию (Standard) с приоритетом для лайтбокса
+        function upgradeCardToStandardRes(cardEl, onComplete, highPriority = false) {
             if (!cardEl) return;
             const img = cardEl.querySelector('img');
             if (!img) return;
@@ -1159,25 +1325,19 @@
             if (img.dataset.stdUpgrading === '1') {
                 return;
             }
-            img.dataset.stdUpgrading = '1';
 
-            const loader = new Image();
-            loader.decoding = 'async';
-            loader.onload = () => {
-                img.src = stdSrc;
-                img.dataset.stdUpgraded = '1';
-                delete img.dataset.stdUpgrading;
-                const cbs = cardEl._stdCallbacks || [];
-                cardEl._stdCallbacks = [];
-                cbs.forEach(cb => cb(stdSrc));
-            };
-            loader.onerror = () => {
-                delete img.dataset.stdUpgrading;
-                const cbs = cardEl._stdCallbacks || [];
-                cardEl._stdCallbacks = [];
-                cbs.forEach(cb => cb(img.src));
-            };
-            loader.src = stdSrc;
+            // Если запрос из открытого лайтбокса — запускаем немедленно вне очереди
+            if (highPriority) {
+                const qIdx = stdUpgradeQueue.indexOf(cardEl);
+                if (qIdx !== -1) stdUpgradeQueue.splice(qIdx, 1);
+                runStandardUpgradeForCard(cardEl, img);
+                return;
+            }
+
+            if (!stdUpgradeQueue.includes(cardEl)) {
+                stdUpgradeQueue.push(cardEl);
+            }
+            processStdUpgradeQueue();
         }
 
         // Подгружает третью ступень (супер-качество из папки high/) для открытого Lightbox
@@ -1193,6 +1353,11 @@
                 return;
             }
 
+            if (img.dataset.highFailed === '1') {
+                if (onComplete) onComplete(img.dataset.stdSrc || img.src);
+                return;
+            }
+
             if (!cardEl._highCallbacks) cardEl._highCallbacks = [];
             if (onComplete) cardEl._highCallbacks.push(onComplete);
 
@@ -1201,26 +1366,49 @@
             }
             img.dataset.highLoading = '1';
 
+            const finishHighLoad = (resolvedSrc, success) => {
+                delete img.dataset.highLoading;
+                if (success) {
+                    img.dataset.highLoaded = '1';
+                    // Если карточка на странице тоже видна, ставим ей уже скачанный в кэш браузера high-исходник
+                    img.src = resolvedSrc;
+                    img.dataset.stdUpgraded = '1';
+                } else {
+                    img.dataset.highFailed = '1';
+                }
+                const cbs = cardEl._highCallbacks || [];
+                cardEl._highCallbacks = [];
+                if (resolvedSrc) {
+                    cbs.forEach(cb => cb(resolvedSrc));
+                }
+            };
+
             const hiLoader = new Image();
             hiLoader.decoding = 'async';
             hiLoader.onload = () => {
-                img.dataset.highLoaded = '1';
-                delete img.dataset.highLoading;
-                const cbs = cardEl._highCallbacks || [];
-                cardEl._highCallbacks = [];
-                cbs.forEach(cb => cb(highSrc));
+                if (typeof hiLoader.decode === 'function') {
+                    hiLoader.decode().then(() => finishHighLoad(highSrc, true)).catch(() => finishHighLoad(highSrc, true));
+                } else {
+                    finishHighLoad(highSrc, true);
+                }
             };
             hiLoader.onerror = () => {
-                delete img.dataset.highLoading;
-                cardEl._highCallbacks = [];
+                // Если для конкретного кадра в папке high/ нет файла, гарантированно отдаём standard-версию
+                upgradeCardToStandardRes(cardEl, (stdUrl) => {
+                    finishHighLoad(stdUrl, false);
+                }, true);
             };
             hiLoader.src = highSrc;
         }
 
-        // На ноутбуках и ПК по мере скролла галереи сразу подгружает обычные (standard) версии вместо lite
+        // На ноутбуках, ПК и телефонах с быстрым интернетом по мере скролла галереи
+        // заранее апгрейдит только карточки на активной видимой странице с lite до standard
         function initDesktopScrollStandardUpgrade() {
             if (desktopStdObserver) desktopStdObserver.disconnect();
-            if (isMobileViewport() || !('IntersectionObserver' in window)) return;
+            if (!('IntersectionObserver' in window)) return;
+
+            const activePageEl = document.getElementById(`page-${currentPage}`);
+            if (!activePageEl || currentPage === 'home') return;
 
             desktopStdObserver = new IntersectionObserver((entries, obs) => {
                 if (!isFastConnection) return;
@@ -1231,11 +1419,14 @@
                     }
                 });
             }, {
-                rootMargin: '500px 0px'
+                rootMargin: isMobileViewport() ? '240px 0px' : '500px 0px'
             });
 
-            document.querySelectorAll('.sortable-photo-item').forEach(card => {
-                desktopStdObserver.observe(card);
+            activePageEl.querySelectorAll('.sortable-photo-item').forEach(card => {
+                const img = card.querySelector('img');
+                if (img && img.dataset.stdUpgraded !== '1') {
+                    desktopStdObserver.observe(card);
+                }
             });
         }
 
@@ -1289,7 +1480,7 @@
                 const cellHTML = `
                     <div class="w-full h-full overflow-hidden relative flex items-center justify-center" style="background-color: rgb(${shade},${shade},${shade - 3});">
                         <div style="width: 58%; height: 68%; background: rgb(${innerShade},${innerShade},${innerShade}); opacity: 0.45;"></div>
-                        <img src="${src}" onerror="this.style.display='none'" draggable="false" oncontextmenu="return false;" class="grid-thumb-cell absolute inset-0" alt="" loading="lazy" />
+                        <img src="${src}" onerror="this.style.display='none'" draggable="false" oncontextmenu="return false;" class="grid-thumb-cell absolute inset-0" alt="" loading="lazy" decoding="async" />
                     </div>
                 `;
                 blurredLayer.insertAdjacentHTML('beforeend', cellHTML);
@@ -1298,7 +1489,7 @@
         }
 
         /* ==========================================================================
-           1. ЭФФЕКТ КАРТОЧЕК STEAM + СФЕРА РАЗБЛЮРА
+           1. ЭФФЕКТ КАРТОЧЕК STEAM + СФЕРА РАЗБЛЮРА (С RAF-ТРОТТЛИНГОМ ДЛЯ FIREFOX)
            ========================================================================== */
         function applyCardTiltAndLens(card, clientX, clientY) {
             const glare = card.querySelector('.steam-glare');
@@ -1313,22 +1504,27 @@
             const rotateX = ((y - centerY) / Math.max(centerY, 1)) * -maxTilt;
             const rotateY = ((x - centerX) / Math.max(centerX, 1)) * maxTilt;
 
+            card.classList.add('tilt-active');
             card.style.transform = `perspective(1000px) rotateX(${rotateX.toFixed(2)}deg) rotateY(${rotateY.toFixed(2)}deg) scale3d(1.025, 1.025, 1.025) translateY(-3px)`;
             card.style.boxShadow = `${-rotateY * 1.1}px ${rotateX * 1.1 + 14}px 28px rgba(0,0,0,0.14)`;
-            card.classList.add('tilt-active');
 
-            card.style.setProperty('--lens-x', `${x.toFixed(1)}px`);
-            card.style.setProperty('--lens-y', `${y.toFixed(1)}px`);
+            // Координаты маски-линзы нужны только карточкам разделов на главной
+            if (card.id === 'card-portraits' || card.id === 'card-reportage') {
+                card.style.setProperty('--lens-x', `${x.toFixed(1)}px`);
+                card.style.setProperty('--lens-y', `${y.toFixed(1)}px`);
+            }
 
             if (glare) {
                 const percentX = (x / rect.width) * 100;
                 const percentY = (y / rect.height) * 100;
                 glare.style.opacity = '1';
-                glare.style.background = `radial-gradient(circle at ${percentX}% ${percentY}%, rgba(255,255,255,0.55) 0%, rgba(255,255,255,0) 65%)`;
+                const glareAlpha = IS_GECKO ? 0.36 : 0.55;
+                glare.style.background = `radial-gradient(circle at ${percentX.toFixed(1)}% ${percentY.toFixed(1)}%, rgba(255,255,255,${glareAlpha}) 0%, rgba(255,255,255,0) 65%)`;
             }
         }
 
         function resetCardTilt(card) {
+            if (!card) return;
             const glare = card.querySelector('.steam-glare');
             card.classList.remove('touch-lens-active', 'tilt-active');
             card.style.transform = '';
@@ -1340,16 +1536,18 @@
 
         function initSteamCards() {
             let hoveredCard = null;
-            const getVisibleCards = () => {
-                const activePageEl = document.getElementById(`page-${currentPage}`);
-                return activePageEl ? [...activePageEl.querySelectorAll('.steam-card')] : [];
-            };
+            let mouseMoveRaf = null;
+            let pendingX = 0;
+            let pendingY = 0;
+            let scrollMeasureRaf = null;
 
             const inside = (r, x, y, margin) =>
-                r.width > 0 && r.height > 0 &&
+                r && r.width > 0 && r.height > 0 &&
                 x >= r.left - margin && x <= r.right + margin &&
                 y >= r.top - margin && y <= r.bottom + margin;
 
+            // Вместо обхода 125 карточек через getBoundingClientRect() на каждый шаг мыши
+            // используем быстрый нативный хит-тест браузера elementFromPoint + гистерезис 22px по краям
             const findCardUnderCursor = (clientX, clientY) => {
                 if (hoveredCard && document.body.contains(hoveredCard)) {
                     const r = hoveredCard._restRect;
@@ -1360,15 +1558,23 @@
                     hoveredCard = null;
                 }
 
-                for (const card of getVisibleCards()) {
-                    const r = card.getBoundingClientRect();
-                    if (inside(r, clientX, clientY, 0)) {
-                        card._restRect = r;
-                        hoveredCard = card;
-                        return card;
-                    }
+                const elUnder = document.elementFromPoint(clientX, clientY);
+                if (!elUnder) return null;
+                const candidate = elUnder.closest('.steam-card');
+                if (!candidate) return null;
+
+                const activePageEl = document.getElementById(`page-${currentPage}`);
+                if (!activePageEl || !activePageEl.contains(candidate)) return null;
+
+                candidate._restRect = candidate.getBoundingClientRect();
+                hoveredCard = candidate;
+
+                // Когда пользователь навёл мышь на карточку в галерее, сразу поднимаем ей приоритет Standard
+                if (candidate.classList.contains('sortable-photo-item')) {
+                    upgradeCardToStandardRes(candidate, null, true);
                 }
-                return null;
+
+                return candidate;
             };
 
             window.addEventListener('mousemove', (e) => {
@@ -1379,16 +1585,25 @@
                     }
                     return;
                 }
-                const target = findCardUnderCursor(e.clientX, e.clientY);
-                if (target) applyCardTiltAndLens(target, e.clientX, e.clientY);
+                pendingX = e.clientX;
+                pendingY = e.clientY;
+                if (mouseMoveRaf) return;
+
+                mouseMoveRaf = requestAnimationFrame(() => {
+                    mouseMoveRaf = null;
+                    const target = findCardUnderCursor(pendingX, pendingY);
+                    if (target) applyCardTiltAndLens(target, pendingX, pendingY);
+                });
             }, { passive: true });
 
-            const remeasureRestRects = () => {
-                getVisibleCards().forEach(card => {
-                    if (card === hoveredCard && card._restRect) {
-                        const old = card._restRect;
-                        const fresh = card.getBoundingClientRect();
-                        card._restRect = {
+            // На скролле пересчитываем геометрию ТОЛЬКО для текущей карточки под курсором (ноль нагрузки на все 125 карточек)
+            const updateHoveredRectOnScroll = () => {
+                scrollMeasureRaf = null;
+                if (hoveredCard && document.body.contains(hoveredCard)) {
+                    const old = hoveredCard._restRect;
+                    const fresh = hoveredCard.getBoundingClientRect();
+                    if (old) {
+                        hoveredCard._restRect = {
                             left: fresh.left,
                             top: fresh.top,
                             width: old.width,
@@ -1396,15 +1611,21 @@
                             right: fresh.left + old.width,
                             bottom: fresh.top + old.height
                         };
-                    } else if (!card.style.transform) {
-                        card._restRect = card.getBoundingClientRect();
+                    } else {
+                        hoveredCard._restRect = fresh;
                     }
-                });
+                }
             };
 
-            window.addEventListener('resize', remeasureRestRects);
-            window.addEventListener('scroll', remeasureRestRects, { passive: true });
-            window.remeasureTiltRects = remeasureRestRects;
+            const scheduleRectUpdate = () => {
+                if (!scrollMeasureRaf) {
+                    scrollMeasureRaf = requestAnimationFrame(updateHoveredRectOnScroll);
+                }
+            };
+
+            window.addEventListener('resize', scheduleRectUpdate, { passive: true });
+            window.addEventListener('scroll', scheduleRectUpdate, { passive: true });
+            window.remeasureTiltRects = scheduleRectUpdate;
             window.getCurrentHoveredCard = () => hoveredCard;
 
             document.addEventListener('touchstart', (e) => {
@@ -1433,12 +1654,10 @@
                 const card = e.target.closest('.steam-card');
                 if (card) resetCardTilt(card);
             }, { passive: true });
-
-            remeasureRestRects();
         }
 
         /* ==========================================================================
-           1.5. ПРОСМОТРЩИК (LIGHTBOX): ПОЭТАПНАЯ ПОДГРУЗКА (LITE -> STANDARD -> HIGH)
+           1.5. ПРОСМОТРЩИК (LIGHTBOX): БЕЗУПРЕЧНАЯ ПОДГРУЗКА (LITE -> STANDARD -> HIGH)
            ========================================================================== */
         let mobileLightboxOpen = false;
         let mobileLightboxItems = [];
@@ -1457,11 +1676,11 @@
             const item = mobileLightboxItems[activeIndex];
             if (!item) return;
             const lbImg = document.getElementById('mobile-lightbox-img');
-            loadHighResForLightbox(item, (highSrc) => {
-                if (mobileLightboxOpen && mobileLightboxIndex === activeIndex && lbImg) {
+            loadHighResForLightbox(item, (resolvedHighOrStdSrc) => {
+                if (mobileLightboxOpen && mobileLightboxIndex === activeIndex && lbImg && resolvedHighOrStdSrc) {
                     lbImg.dataset.showingHigh = '1';
-                    if (lbImg.getAttribute('src') !== highSrc) {
-                        lbImg.src = highSrc;
+                    if (lbImg.getAttribute('src') !== resolvedHighOrStdSrc) {
+                        lbImg.src = resolvedHighOrStdSrc;
                     }
                 }
             });
@@ -1513,8 +1732,8 @@
 
             if (pixelSize !== lastAppliedLbPixelSize) {
                 lastAppliedLbPixelSize = pixelSize;
-                const halfRadius = Math.max(1, Math.floor(pixelSize / 2));
-                if (flood && tileBox && dilate) {
+                if (!IS_GECKO && flood && tileBox && dilate) {
+                    const halfRadius = Math.max(1, Math.floor(pixelSize / 2));
                     flood.setAttribute('x', String(halfRadius));
                     flood.setAttribute('y', String(halfRadius));
                     tileBox.setAttribute('width', String(pixelSize));
@@ -1597,41 +1816,54 @@
             if (imgInside && lbImg) {
                 delete lbImg.dataset.showingHigh;
 
-                // Если для этого кадра уже загружена high-версия, ставим её сразу же
+                // Если для этого кадра уже загружена high-версия, ставим её мгновенно
                 if (imgInside.dataset.highLoaded === '1' && imgInside.dataset.highSrc) {
                     lbImg.dataset.showingHigh = '1';
                     lbImg.src = imgInside.dataset.highSrc;
                 } else {
-                    // Шаг 1: мгновенно отображаем то, что уже есть в карточке (lite или standard)
-                    lbImg.src = imgInside.src;
+                    // Шаг 1: мгновенно отображаем лучшее из того, что уже декодировано в карточке
+                    const initialSrc = (imgInside.dataset.stdUpgraded === '1' && imgInside.dataset.stdSrc)
+                        ? imgInside.dataset.stdSrc
+                        : imgInside.src;
+                    lbImg.src = initialSrc;
 
-                    // Шаг 2: параллельно подгружаем обычную (standard) версию (если ещё не загружена)
+                    // Шаг 2: с высшим приоритетом (вне очереди скролла) подгружаем Standard-версию
                     upgradeCardToStandardRes(item, (stdSrc) => {
                         if (!mobileLightboxOpen || mobileLightboxIndex !== activeIndex) return;
-                        if (lbImg.dataset.showingHigh !== '1') {
+                        if (lbImg.dataset.showingHigh !== '1' && stdSrc) {
                             lbImg.src = stdSrc;
                         }
-                    });
+                    }, true);
 
-                    // Шаг 3: независимо от статуса standard, через 80мс запускаем загрузку супер-качественной (high) версии
+                    // Шаг 3: сразу запускаем подгрузку максимальной High-версии (с фоновым decode() без лагов)
                     lightboxHighTimer = setTimeout(() => {
                         if (!mobileLightboxOpen || mobileLightboxIndex !== activeIndex) return;
                         ensureCurrentSlideHighRes();
-                    }, 80);
+                    }, 35);
                 }
 
-                // Предзагружаем стандартные версии для соседних кадров
+                // Предзагружаем соседние слайды (и Standard, и High для следующего кадра на быстром соединении)
                 const nextItem = mobileLightboxItems[(activeIndex + 1) % mobileLightboxItems.length];
                 const prevItem = mobileLightboxItems[(activeIndex - 1 + mobileLightboxItems.length) % mobileLightboxItems.length];
-                if (nextItem) upgradeCardToStandardRes(nextItem);
-                if (prevItem && isFastConnection) upgradeCardToStandardRes(prevItem);
+                if (nextItem) {
+                    upgradeCardToStandardRes(nextItem, () => {
+                        if (isFastConnection && mobileLightboxOpen) {
+                            loadHighResForLightbox(nextItem);
+                        }
+                    }, true);
+                }
+                if (prevItem && isFastConnection) {
+                    upgradeCardToStandardRes(prevItem);
+                }
             }
             if (counter) {
                 counter.textContent = `${activeIndex + 1} / ${mobileLightboxItems.length}`;
             }
 
             if (shouldScrollPage) {
-                item.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                // Используем 'auto' вместо 'smooth', чтобы во время листания лайтбокса
+                // фоновая прокрутка страницы под фильтром не вызывала перерисовку в браузерах
+                item.scrollIntoView({ behavior: 'auto', block: 'center' });
             }
         }
 
@@ -1918,20 +2150,15 @@
             const pin3X = pinBaseX + x3 - 28;
             const pin3Y = y3 + vh * 0.18;
 
-            const updatePin = (groupId, px, py) => {
+            // Перемещаем группы заклёпок через быстрый SVG-трансформ вместо 12 вызовов setAttribute на каждый кадр
+            const updatePinGroup = (groupId, px, py) => {
                 const g = document.getElementById(groupId);
-                if (!g) return;
-                const outer = g.querySelector('.pin-outer');
-                const inner = g.querySelector('.pin-inner');
-                outer.setAttribute('cx', px);
-                outer.setAttribute('cy', py);
-                inner.setAttribute('cx', px);
-                inner.setAttribute('cy', py);
+                if (g) g.setAttribute('transform', `translate(${px.toFixed(1)}, ${py.toFixed(1)})`);
             };
 
-            updatePin('pin-group-1', pin1X, pin1Y);
-            updatePin('pin-group-2', pin2X, pin2Y);
-            updatePin('pin-group-3', pin3X, pin3Y);
+            updatePinGroup('pin-group-1', pin1X, pin1Y);
+            updatePinGroup('pin-group-2', pin2X, pin2Y);
+            updatePinGroup('pin-group-3', pin3X, pin3Y);
         }
 
         function setShutterPixelProgress(easedProgress) {
@@ -1956,9 +2183,9 @@
 
             if (pixelSize !== lastAppliedShutterPixelSize) {
                 lastAppliedShutterPixelSize = pixelSize;
-                const halfRadius = Math.max(1, Math.floor(pixelSize / 2));
 
-                if (flood && tileBox && dilate) {
+                if (!IS_GECKO && flood && tileBox && dilate) {
+                    const halfRadius = Math.max(1, Math.floor(pixelSize / 2));
                     flood.setAttribute('x', String(halfRadius));
                     flood.setAttribute('y', String(halfRadius));
                     tileBox.setAttribute('width', String(pixelSize));
@@ -2182,6 +2409,7 @@
             grid.innerHTML = '';
 
             const layoutPlan = computeEditorialSpans(files);
+            const fragment = document.createDocumentFragment();
 
             files.forEach((name, i) => {
                 const d = PHOTO_DIMS[name] || { w: 3, h: 4 };
@@ -2206,9 +2434,10 @@
                     <button onclick="cycleItemSpan(event, this)" class="size-toggle-btn absolute top-2 right-2 sm:top-3 sm:right-3 z-30 bg-black text-white font-dot text-[10px] sm:text-xs px-2 py-0.5 sm:px-2.5 sm:py-1">размер: ${SPAN_LABELS[span]}</button>
                     <div class="steam-glare"></div>
                 `;
-                grid.appendChild(el);
+                fragment.appendChild(el);
             });
 
+            grid.appendChild(fragment);
             applyEditorialRowPolish(gridId);
         }
 
