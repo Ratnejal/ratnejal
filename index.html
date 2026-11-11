@@ -7,7 +7,6 @@
     <meta property="og:title" content="ratnejal">
     <meta property="og:site_name" content="ratnejal">
     <meta name="apple-mobile-web-app-title" content="ratnejal">
-    <!-- Пиксельное SVG-лого (иконка видоискателя камеры) для вкладки браузера и превью ссылок -->
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' shape-rendering='crispEdges'%3E%3Crect width='16' height='16' fill='%23FFFFFF'/%3E%3Cpath fill='%23111111' d='M1,1h4v1h-3v3h-1ZM11,1h4v4h-1v-3h-3ZM1,11h1v3h3v1h-4ZM14,11h1v4h-4v-1h3ZM5,4h6v1h-6ZM4,5h1v6h-1ZM11,5h1v6h-1ZM5,11h6v1h-6ZM7,7h2v2h-2Z'/%3E%3C/svg%3E">
     <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' shape-rendering='crispEdges'%3E%3Crect width='16' height='16' fill='%23FFFFFF'/%3E%3Cpath fill='%23111111' d='M1,1h4v1h-3v3h-1ZM11,1h4v4h-1v-3h-3ZM1,11h1v3h3v1h-4ZM14,11h1v4h-4v-1h3ZM5,4h6v1h-6ZM4,5h1v6h-1ZM11,5h1v6h-1ZM5,11h6v1h-6ZM7,7h2v2h-2Z'/%3E%3C/svg%3E">
     <script src="https://cdn.tailwindcss.com"></script>
@@ -50,17 +49,11 @@
             transform: translateZ(0);
         }
 
-        /* ==================== КОНТЕЙНЕР САЙТА И ЭФФЕКТ ПИКСЕЛИЗАЦИИ ЗАТВОРА / ЛАЙТБОКСА ==================== */
         #app-viewport {
             transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1);
             background-color: #FFFFFF;
         }
 
-        /* КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ БЕЛОГО ЭКРАНА И ЛАГОВ НА ГЛУБОКОМ СКРОЛЛЕ:
-           Когда открыт лайтбокс или идёт затвор, #app-viewport фиксируется ровно в 1 экран (100vw x 100dvh),
-           а JS оставляет в рендере ТОЛЬКО 3-6 карточек, которые сейчас видны на экране, с их точными экранными координатами.
-           Поэтому текстура под SVG-фильтром ВСЕГДА равна ровно 1 экрану (а не 25 000px), никогда не превышает лимит GPU
-           (4096px/8192px) и фотографии никогда не пропадают в белый фон даже в самом низу галереи! */
         body.viewport-filter-locked {
             overflow: hidden !important;
         }
@@ -86,7 +79,6 @@
             -webkit-filter: url(#mobile-lightbox-pixel-filter) brightness(var(--lb-bright, 1)) contrast(1.08);
         }
 
-        /* На Firefox/LibreWolf SVG feTile+feMorphology работает на CPU, поэтому там используем быстрый GPU-фильтр */
         html.is-gecko #app-viewport.shutter-pixel-active {
             filter: contrast(1.12);
         }
@@ -115,11 +107,15 @@
             -webkit-backdrop-filter: blur(var(--px-blur, 0px)) contrast(1.18);
         }
 
+        html.is-webkit #shutter-pixel-grid-overlay {
+            backdrop-filter: none !important;
+            -webkit-backdrop-filter: none !important;
+        }
+
         #shutter-pixel-grid-overlay.active {
             opacity: 1;
         }
 
-        /* ==================== КАДРИРОВАНИЕ АВТОПОРТРЕТА ME.WEBP (ЭТАЛОН МАКБУКА) ==================== */
         .hero-photo-col {
             position: relative;
             overflow: visible !important;
@@ -153,7 +149,6 @@
             }
         }
 
-        /* Эталонная геометрия с ratnejal.ru (включается на десктопных окнах браузера, включая MacBook) */
         @media (min-width: 640px) and (min-aspect-ratio: 163 / 100) {
             #hero-me-transform-box {
                 transform: translate3d(calc(var(--me-x) - 3%), var(--me-y), 0) scale(calc(var(--me-scale) * 0.91));
@@ -186,8 +181,6 @@
             }
         }
 
-        /* Сдвиг правой колонки ВЫШЕ и калибровка карточек ТОЛЬКО для широкоформатных экранов 16:9 (HP Omen 17 и др.).
-           На MacBook 14" физический экран ~1.54 (16:10), а рабочая область окна < 1.80, поэтому MacBook НЕ затрагивается вообще! */
         @media (min-width: 640px) and (min-aspect-ratio: 180 / 100) {
             .hero-content-col {
                 padding-bottom: 18vh !important;
@@ -224,7 +217,6 @@
             }
         }
 
-        /* ==================== МОБИЛЬНАЯ КОМПОЗИЦИЯ (100% ИДЕНТИЧНА ИСХОДНОМУ INDEX.HTML) ==================== */
         @media (max-width: 639px) {
             #page-home {
                 height: 100dvh;
@@ -297,7 +289,6 @@
             }
         }
 
-        /* ==================== ПРОСМОТРЩИК ФОТО (LIGHTBOX НА ТЕЛЕФОНЕ И ПК С ЗУМОМ И СВАЙПАМИ) ==================== */
         #mobile-photo-lightbox {
             position: fixed;
             inset: 0;
@@ -339,8 +330,6 @@
             cursor: grabbing;
         }
 
-        /* Важно: без постоянного will-change: transform, чтобы браузер не запекал мыльную GPU-текстуру
-           и при сильном зуме (scale > 1) отрисовывал все пиксели загруженной high-версии */
         #mobile-lightbox-img {
             max-width: 90vw;
             max-height: 78dvh;
@@ -360,7 +349,6 @@
             transition: none !important;
         }
 
-        /* ==================== ЛАМЕЛЬНЫЙ ЗАТВОР FUJIFILM X-T4 ==================== */
         #lamellar-shutter {
             position: fixed;
             inset: 0;
@@ -424,7 +412,6 @@
             transition: transform 0.35s cubic-bezier(0.77, 0, 0.175, 1);
         }
 
-        /* ==================== КАРТОЧКИ STEAM И МЕТА-БОКСЫ ==================== */
         .meta-box {
             position: relative;
             background-color: #F4F4F2;
@@ -471,9 +458,6 @@
             bottom: 220px;
         }
 
-        /* Важно: НЕ задаём perspective: 1100px на обёртку всей галереи (.steam-card-wrapper),
-           потому что в Safari/Chrome 3D-контекст на 125 карточках ломает SVG-фильтр и переполняет VRAM.
-           Перспектива применяется индивидуально в transform: perspective(1000px) только активной карточке! */
         .steam-card {
             position: relative;
             transition: transform 0.16s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.2s ease;
@@ -503,7 +487,6 @@
             mix-blend-mode: normal;
         }
 
-        /* ==================== СЕТКА 6x3 В КАРТОЧКАХ И ЛИНЗА РАЗБЛЮРА ==================== */
         .card-grid-6x3 {
             display: grid;
             grid-template-columns: repeat(6, 1fr);
@@ -555,7 +538,6 @@
             display: block;
         }
 
-        /* ==================== РЕЖИМ КОНСТРУКТОРА ДЛЯ АВТОРА ==================== */
         .edit-mode-active .sortable-photo-item {
             cursor: grab;
             outline: 2px dashed #111111;
@@ -587,12 +569,13 @@
         }
     </style>
     <script>
-        /* Мгновенное определение движка Gecko (Firefox / LibreWolf) и физического монитора 16:9 (HP Omen 17) */
         (function() {
             const ua = navigator.userAgent || '';
-            if (/Firefox|FxiOS|LibreWolf|Gecko\//i.test(ua) && !/Chrome|Chromium|Edg|OPR/i.test(ua)) {
-                document.documentElement.classList.add('is-gecko');
-            }
+            const isGecko = /Firefox|FxiOS|LibreWolf|Gecko\//i.test(ua) && !/Chrome|Chromium|Edg|OPR/i.test(ua);
+            const isWebKit = /AppleWebKit/i.test(ua) && !/Chrome|CriOS|Chromium|Edg|OPR|FxiOS|Firefox/i.test(ua);
+
+            if (isGecko) document.documentElement.classList.add('is-gecko');
+            if (isWebKit) document.documentElement.classList.add('is-webkit');
 
             function syncDisplayGeometryClass() {
                 if (window.innerWidth < 640) {
@@ -603,9 +586,6 @@
                 const sh = (window.screen && window.screen.height) ? window.screen.height : window.innerHeight;
                 const screenRatio = sw / Math.max(sh, 1);
                 const viewportRatio = window.innerWidth / Math.max(window.innerHeight, 1);
-
-                // ВАЖНО: проверяем ТОЛЬКО физический экран монитора (screenRatio >= 1.72, т.е. 16:9 = 1.777).
-                // На MacBook 14" screenRatio всегда равен 1.54 (16:10), поэтому MacBook НИКОГДА не получит класс widescreen-16-9!
                 const isWide16by9 = screenRatio >= 1.72 && viewportRatio >= 1.63;
                 document.documentElement.classList.toggle('widescreen-16-9', isWide16by9);
             }
@@ -617,7 +597,6 @@
 </head>
 <body>
 
-    <!-- АКТИВНЫЙ ЛАМЕЛЬНЫЙ ЗАТВОР FUJIFILM X-T4 -->
     <div id="lamellar-shutter">
         <div id="blade-1" class="xt4-blade"></div>
         <div id="blade-2" class="xt4-blade"></div>
@@ -641,13 +620,10 @@
         </svg>
     </div>
 
-    <!-- ОВЕРЛЕЙ ПИКСЕЛИЗАЦИИ ВО ВРЕМЯ ХОДА ЗАТВОРА -->
     <div id="shutter-pixel-grid-overlay"></div>
 
-    <!-- РЕЗЕРВНЫЙ КЛАССИЧЕСКИЙ ЗАТВОР -->
     <div id="classic-shutter-backup"></div>
 
-    <!-- ПРОСМОТРЩИК ФОТО (LIGHTBOX НА ТЕЛЕФОНЕ И ПК) -->
     <div id="mobile-photo-lightbox" onclick="handleLightboxBackdropClick(event)">
         <button onclick="closeMobileLightbox(event)" class="fixed top-4 right-4 sm:top-6 sm:right-8 z-50 bg-white/90 hover:bg-white text-[#111] font-dot text-sm sm:text-base px-3.5 py-1.5 border border-black/30 shadow-md active:scale-95 transition-transform">
             ✕ закрыть
@@ -670,7 +646,6 @@
         </div>
     </div>
 
-    <!-- ПАНЕЛЬ КОНСТРУКТОРА ДЛЯ АВТОРА (вызывается по Shift + Option + E на Mac или ?edit=1) -->
     <div id="admin-layout-bar" class="hidden fixed bottom-4 right-4 left-4 sm:left-auto z-50 bg-[#111] text-white font-dot text-xs px-4 py-3.5 shadow-2xl flex flex-col gap-3 border border-white/20 max-w-md">
         <div class="flex items-center justify-between gap-4 border-b border-white/15 pb-2">
             <span>конструктор (Shift+Option+E — скрыть)</span>
@@ -703,14 +678,11 @@
         </div>
     </div>
 
-    <!-- КОНТЕЙНЕР САЙТА -->
     <div id="app-viewport">
 
-        <!-- ==================== СТРАНИЦА 1: ГЛАВНАЯ ==================== -->
         <main id="page-home" class="page-view h-screen w-screen overflow-hidden bg-white flex flex-col sm:flex-row">
             <div class="w-full flex-1 grid grid-cols-1 sm:grid-cols-12 h-full relative">
                 
-                <!-- Правая колонка с текстом и карточками -->
                 <div class="hero-content-col order-1 sm:order-2 col-span-1 sm:col-span-7 flex flex-col justify-center px-6 pt-12 pb-6 sm:px-10 lg:py-0 lg:px-20 z-20">
                     
                     <div class="hero-inner-box max-w-xl w-full mx-auto sm:mx-0">
@@ -721,7 +693,6 @@
 
                             <div class="hero-cards-mobile hero-cards-desktop grid grid-cols-2 gap-4 sm:gap-8 steam-card-wrapper">
                                 
-                                <!-- Карточка: портреты -->
                                 <div id="card-portraits" onclick="switchPage('portraits')" class="steam-card meta-box cursor-pointer h-36 sm:h-44 lg:h-52 flex items-center justify-center bg-[#F4F4F2]">
                                     <div class="card-grid-layer-blurred card-grid-6x3" data-grid-role="blurred"></div>
                                     <div class="card-grid-layer-sharp card-grid-6x3" data-grid-role="sharp"></div>
@@ -731,7 +702,6 @@
                                     </span>
                                 </div>
 
-                                <!-- Карточка: репортаж -->
                                 <div id="card-reportage" onclick="switchPage('reportage')" class="steam-card meta-box cursor-pointer h-36 sm:h-44 lg:h-52 flex items-center justify-center bg-[#F4F4F2] sm:mt-12">
                                     <div class="card-grid-layer-blurred card-grid-6x3" data-grid-role="blurred"></div>
                                     <div class="card-grid-layer-sharp card-grid-6x3" data-grid-role="sharp"></div>
@@ -747,7 +717,6 @@
 
                 </div>
 
-                <!-- Левая колонка: Автопортрет me.webp без режущей правой границы -->
                 <div class="hero-photo-col order-2 sm:order-1 col-span-1 sm:col-span-5 h-full bg-transparent select-none relative mt-auto">
                     <div id="hero-me-transform-box">
                         <img id="hero-me-photo" 
@@ -769,11 +738,8 @@
             </div>
         </main>
 
-
-        <!-- ==================== СТРАНИЦА 2: ПОРТРЕТЫ ==================== -->
         <main id="page-portraits" class="page-view hidden min-h-screen bg-white py-20 sm:py-28 px-2.5 sm:px-8 lg:px-14">
             
-            <!-- Кнопка возврата на главную -->
             <div class="fixed top-4 left-4 sm:top-8 sm:left-10 z-40">
                 <button onclick="switchPage('home')" class="font-dot text-sm sm:text-base bg-white/85 backdrop-blur-sm px-3.5 py-1.5 border border-black/20 hover:border-black transition-colors shadow-sm">
                     ← назад
@@ -791,11 +757,8 @@
 
         </main>
 
-
-        <!-- ==================== СТРАНИЦА 3: РЕПОРТАЖ ==================== -->
         <main id="page-reportage" class="page-view hidden min-h-screen bg-white py-20 sm:py-28 px-2.5 sm:px-8 lg:px-14">
             
-            <!-- Кнопка возврата на главную -->
             <div class="fixed top-4 left-4 sm:top-8 sm:left-10 z-40">
                 <button onclick="switchPage('home')" class="font-dot text-sm sm:text-base bg-white/85 backdrop-blur-sm px-3.5 py-1.5 border border-black/20 hover:border-black transition-colors shadow-sm">
                     ← назад
@@ -816,7 +779,6 @@
 
     </div>
 
-    <!-- ФИКСИРОВАННАЯ ПИКСЕЛЬНАЯ ИКОНКА И ССЫЛКА TELEGRAM -->
     <a id="tg-floating-btn"
        href="https://t.me/ratnejal"
        target="_blank"
@@ -830,9 +792,6 @@
         <span>@ratnejal</span>
     </a>
 
-    <!-- SVG-ФИЛЬТРЫ ДИСКРЕТИЗАЦИИ (ПИКСЕЛИЗАЦИЯ ЭКРАНА ПРИ ХОДЕ ЗАТВОРА И ЛАЙТБОКСЕ)
-         Использование стандартных координат 0%..100% в паре с одноэкранной фиксацией #app-viewport
-         гарантирует 100% работу пикселизации на iOS Safari, Android Chrome и всех десктопах без переполнения GPU! -->
     <svg width="0" height="0" style="position:absolute;pointer-events:none;" aria-hidden="true">
         <defs>
             <filter id="shutter-pixelate-filter" x="0%" y="0%" width="100%" height="100%" color-interpolation-filters="sRGB">
@@ -852,14 +811,10 @@
         </defs>
     </svg>
 
-
-    <!-- СКРИПТЫ ИНТЕРАКТИВНЫХ МЕХАНИК -->
     <script>
-        /* ==========================================================================
-           НАСТРОЙКА ЗАТВОРА, ТЕКСТОВ И КАТАЛОГА ФОТОГРАФИЙ
-           ========================================================================== */
         const SHUTTER_MODE = 'lamellar';
         const IS_GECKO = document.documentElement.classList.contains('is-gecko');
+        const IS_WEBKIT = document.documentElement.classList.contains('is-webkit');
         let currentPage = 'home';
         let isShutterAnimating = false;
 
@@ -1053,9 +1008,6 @@
 
         const PHOTO_DIMS = {"me":{"w":3724,"h":5586},"pixel_DSCF9900":{"w":6240,"h":4160},"portreit_DSCF0022":{"w":6240,"h":4160},"portreit_DSCF2273":{"w":4091,"h":6137},"portreit_DSCF2279":{"w":4072,"h":4072},"portreit_DSCF2291":{"w":3807,"h":5710},"portreit_DSCF2292":{"w":4018,"h":6027},"portreit_DSCF2296":{"w":4160,"h":6240},"portreit_DSCF2321":{"w":3808,"h":5712},"portreit_DSCF2337":{"w":4160,"h":6240},"portreit_DSCF2346":{"w":4160,"h":6240},"portreit_DSCF2349":{"w":6240,"h":4160},"portreit_DSCF3937E":{"w":4160,"h":6240},"portreit_DSCF3965E":{"w":4160,"h":6240},"portreit_DSCF3973E":{"w":3576,"h":5364},"portreit_DSCF3982E":{"w":4101,"h":6152},"portreit_DSCF3985E2":{"w":4160,"h":6240},"portreit_DSCF3987E2":{"w":4160,"h":6240},"portreit_DSCF4009E2":{"w":4045,"h":6067},"portreit_DSCF4014E2":{"w":4160,"h":6240},"portreit_DSCF4017E2":{"w":4068,"h":6103},"portreit_DSCF4021E2":{"w":4004,"h":6006},"portreit_DSCF4027E2":{"w":3773,"h":5659},"portreit_DSCF4033E2":{"w":3809,"h":5713},"portreit_DSCF4036E2":{"w":4095,"h":6143},"portreit_DSCF4038E2":{"w":4155,"h":6232},"portreit_DSCF4042E2":{"w":4122,"h":6182},"portreit_DSCF4043E2":{"w":4160,"h":6240},"portreit_DSCF6799":{"w":4160,"h":6240},"portreit_DSCF6804":{"w":6127,"h":4085},"portreit_DSCF6827":{"w":4087,"h":6131},"portreit_DSCF6841":{"w":6240,"h":4160},"portreit_DSCF6852":{"w":4160,"h":6240},"portreit_DSCF6856":{"w":4160,"h":6240},"portreit_DSCF6858":{"w":4025,"h":6038},"portreit_DSCF6859":{"w":3940,"h":5910},"portreit_DSCF6896":{"w":6240,"h":4160},"portreit_DSCF6942":{"w":6240,"h":4160},"portreit_DSCF6949":{"w":6240,"h":4160},"portreit_DSCF8501e":{"w":6240,"h":4160},"portreit_DSCF8511e":{"w":1465,"h":2198},"portreit_DSCF8533e":{"w":4160,"h":6240},"portreit_DSCF8541e":{"w":6240,"h":4160},"portreit_DSCF8553e":{"w":2370,"h":3555},"portreit_DSCF9288":{"w":6240,"h":4160},"portreit_DSCF9320":{"w":6240,"h":4160},"portreit_DSCF9350":{"w":6240,"h":4160},"portreit_DSCF9369":{"w":6240,"h":4160},"portreit_DSCF9407":{"w":6240,"h":4160},"portreit_DSCF9454":{"w":6145,"h":4097},"portreit_DSCF9458":{"w":6181,"h":4121},"portreit_DSCF9471":{"w":6240,"h":4160},"portreit_DSCF9485":{"w":4160,"h":6240},"portreit_DSCF9561":{"w":6240,"h":4160},"portreit_DSCF9576":{"w":3299,"h":4948},"portreit_DSCF9597":{"w":4160,"h":6240},"portreit_DSCF9614":{"w":6240,"h":4160},"portreit_DSCF9624":{"w":6240,"h":4160},"portreit_DSCF9633":{"w":6240,"h":4160},"portreit_DSCF9669":{"w":3753,"h":5629},"portreit_DSCF9676":{"w":6240,"h":4160},"portreit_DSCF9685":{"w":6240,"h":4160},"portreit_DSCF9705":{"w":6240,"h":4160},"portreit_DSCF9723":{"w":4160,"h":6240},"portreit_DSCF9747":{"w":4160,"h":6240},"portreit_DSCF9768":{"w":6240,"h":4160},"portreit_DSCF9788":{"w":6240,"h":4160},"portreit_DSCF9816":{"w":6240,"h":4160},"portreit_DSCF9821":{"w":3743,"h":5615},"portreit_DSCF9822":{"w":4160,"h":6240},"portreit_DSCF9857":{"w":6240,"h":4160},"portreit_DSCF9884":{"w":6240,"h":4160},"portreit_DSCF9889":{"w":6240,"h":4160},"portreit_DSCF9890":{"w":6240,"h":4160},"portreit_DSCF9909":{"w":3612,"h":5418},"portreit_DSCF9920":{"w":6240,"h":4160},"portreit_DSCF9935":{"w":4160,"h":6240},"portreit_DSCF9966":{"w":6240,"h":4160},"portreit_DSCF9984":{"w":3686,"h":2458},"portreit_DSCF9985":{"w":4160,"h":6240},"portreit_DSCF9988":{"w":4160,"h":6240},"portreit_DSCF9989":{"w":6240,"h":4160},"portreit_INST_DSCF2758":{"w":2560,"h":1707},"portreit_INST_DSCF2768":{"w":2560,"h":1707},"portreit_INST_DSCF2782":{"w":1707,"h":2560},"portreit_INST_DSCF2797":{"w":2560,"h":1707},"portreit_INST_DSCF2819":{"w":2560,"h":2560},"portreit_INST_DSCF2835":{"w":1707,"h":2560},"portreit_INST_DSCF2842":{"w":1707,"h":2560},"portreit_INST_DSCF2844":{"w":2560,"h":1707},"portreit_INST_DSCF2846":{"w":2560,"h":1707},"portreit_INST_DSCF2874":{"w":2560,"h":1707},"portreit_INST_DSCF2885":{"w":1707,"h":2560},"portreit_INST_DSCF2894":{"w":2560,"h":1707},"portreit_INST_DSCF2896":{"w":2560,"h":1707},"portreit_INST_DSCF2911":{"w":2560,"h":1707},"portreit_INST_DSCF2912":{"w":2560,"h":1707},"portreit_INST_DSCF2916":{"w":2560,"h":1707},"portreit_INST_DSCF2920":{"w":1707,"h":2560},"portreit_INST_DSCF2936":{"w":2560,"h":1707},"portreit_INST_DSCF2976":{"w":2560,"h":1707},"portreit_INST_DSCF3044":{"w":1707,"h":2560},"portreit_INST_DSCF3051":{"w":2560,"h":1707},"portreit_INST_DSCF3054":{"w":1707,"h":2560},"portreit_INST_DSCF3062":{"w":1707,"h":2560},"portreit_INST_DSCF3080":{"w":2560,"h":1707},"portreit_INST_DSCF3102":{"w":2560,"h":1707},"portreit_INST_DSCF3107":{"w":1707,"h":2560},"portreit_INST_DSCF3109":{"w":1707,"h":2560},"portreit_INST_DSCF3144":{"w":1707,"h":2560},"portreit_INST_DSCF3155":{"w":1707,"h":2560},"portreit_INST_DSCF3174":{"w":1707,"h":2560},"portreit_INST_DSCF3182":{"w":2560,"h":1707},"portreit_INST_DSCF3223":{"w":1707,"h":2560},"portreit_INST_DSCF3261":{"w":2560,"h":1707},"portreit_INST_DSCF3270":{"w":2560,"h":1707},"portreit_INST_DSCF3271":{"w":2560,"h":1707},"portreit_INST_DSCF3276":{"w":1707,"h":2560},"portreit_INST_DSCF3278":{"w":2560,"h":1707},"portreit_INST_DSCF3295":{"w":1707,"h":2560},"portreit_INST_DSCF3299":{"w":1707,"h":2560},"portreit_INST_DSCF3310":{"w":2560,"h":1707},"portreit_INST_DSCF3367":{"w":2560,"h":1707},"portreit_INST_DSCF3378":{"w":1707,"h":2560},"portreit_INST_DSCF3379":{"w":1707,"h":2560},"portreit_Ретушь DSCF3916E2":{"w":4619,"h":3079},"portreit_asciikit-2026-05-10T19-00-39":{"w":3240,"h":2160},"documental_DSCF0127":{"w":6240,"h":4160},"documental_DSCF0159":{"w":4160,"h":6240},"documental_DSCF0167":{"w":6240,"h":4160},"documental_DSCF0277":{"w":6240,"h":4160},"documental_DSCF0289":{"w":6240,"h":4160},"documental_DSCF0294":{"w":3480,"h":5220},"documental_DSCF0295":{"w":3499,"h":5248},"documental_DSCF0527":{"w":1954,"h":1303},"documental_DSCF0571":{"w":3428,"h":2286},"documental_DSCF0573":{"w":2303,"h":3455},"documental_DSCF0583":{"w":1808,"h":1205},"documental_DSCF0613":{"w":1869,"h":1246},"documental_DSCF0672":{"w":3851,"h":2568},"documental_DSCF0810":{"w":4312,"h":2875},"documental_DSCF0878":{"w":5510,"h":3674},"documental_DSCF1133":{"w":6240,"h":4160},"documental_DSCF1180":{"w":3624,"h":5436},"documental_DSCF1218":{"w":3872,"h":5807},"documental_DSCF1229":{"w":4010,"h":2674},"documental_DSCF1250":{"w":3907,"h":2605},"documental_DSCF1854":{"w":1714,"h":2571},"documental_DSCF1870":{"w":2745,"h":1830},"documental_DSCF1889":{"w":4160,"h":6240},"documental_DSCF1893":{"w":5895,"h":3930},"documental_DSCF1911":{"w":3999,"h":5999},"documental_DSCF1914":{"w":6240,"h":4160},"documental_DSCF1917":{"w":4160,"h":6240},"documental_DSCF1923":{"w":6240,"h":4160},"documental_DSCF1934":{"w":6240,"h":4160},"documental_DSCF1942":{"w":4160,"h":6240},"documental_DSCF1946":{"w":4160,"h":6240},"documental_DSCF3708E":{"w":4160,"h":6240},"documental_DSCF3715E":{"w":6240,"h":4160},"documental_DSCF3720E":{"w":6240,"h":4160},"documental_DSCF3725E":{"w":6240,"h":4160},"documental_DSCF3729E":{"w":6240,"h":4160},"documental_DSCF3756E":{"w":6240,"h":4160},"documental_DSCF3765E":{"w":4061,"h":2707},"documental_DSCF3772E":{"w":6240,"h":4160},"documental_DSCF3776E":{"w":4160,"h":6240},"documental_DSCF3779E":{"w":4160,"h":6240},"documental_DSCF3800E":{"w":4160,"h":6240},"documental_DSCF3811E":{"w":2554,"h":3831},"documental_DSCF3817E":{"w":4160,"h":6240},"documental_DSCF3855E":{"w":4160,"h":6240},"documental_DSCF3863E":{"w":3231,"h":4846},"documental_DSCF3897E":{"w":1643,"h":2464},"documental_DSCF4464E":{"w":5973,"h":3982},"documental_DSCF4484E":{"w":4160,"h":6240},"documental_DSCF4495E":{"w":6240,"h":4160},"documental_DSCF4513E":{"w":1567,"h":2350},"documental_DSCF4523E":{"w":4160,"h":6240},"documental_DSCF4567E":{"w":3197,"h":4796},"documental_DSCF4579E":{"w":2213,"h":3319},"documental_DSCF4584E":{"w":5668,"h":3779},"documental_DSCF4626E":{"w":6240,"h":4160}};
 
-        /* ==========================================================================
-           ЗАВОДСКАЯ КОНФИГУРАЦИЯ (ТОЧНО ИЗ ТВОЕГО КОНФИГА: -61%, -2%, 1.74)
-           ========================================================================== */
         const SAVED_SITE_CONFIG = {
             "meCrop": {
                 "x": "-61%",
@@ -1223,14 +1175,6 @@
             return window.innerWidth < 640;
         }
 
-        /* ==========================================================================
-           ОДНОЭКРАННАЯ ISOLATION-СИСТЕМА ДЛЯ ПИКСЕЛИЗАЦИИ (ЗАТВОР И ЛАЙТБОКС)
-           Решает проблему пропадания фотографий в белый фон и лагов внизу длинной галереи:
-           При включении SVG-фильтра мы НЕ рендерим всю страницу высотой 20 000px.
-           Вместо этого мы замеряем 3–6 карточек, которые прямо сейчас видны в окне,
-           и фиксируем только их внутри #app-viewport размером ровно 100vw x 100dvh,
-           а остальные 120 карточек временно выключаем из рендера (display: none).
-           ========================================================================== */
         let isViewportFilterLocked = false;
         let lockedScrollY = 0;
         let frozenGalleryState = null;
@@ -1242,12 +1186,9 @@
         function lockViewportForPixelFilter() {
             if (isViewportFilterLocked) return;
             lockedScrollY = window.scrollY || window.pageYOffset || 0;
-            const vw = window.innerWidth;
             const vh = window.innerHeight;
             const activePage = getActivePageViewEl();
 
-            // Если мы на странице портретов или репортажа и проскроллили галерею,
-            // замораживаем в кадре только видимые сейчас элементы, чтобы размер текстуры фильтра был строго 1 экран!
             if (activePage && (currentPage === 'portraits' || currentPage === 'reportage')) {
                 const gridId = currentPage === 'portraits' ? 'portraits-sortable-grid' : 'reportage-sortable-grid';
                 const grid = document.getElementById(gridId);
@@ -1397,14 +1338,11 @@
             }
         }
 
-        /* ==========================================================================
-           УМНАЯ 3-ЭТАПНАЯ ПОДГРУЗКА ФОТО (LITE -> STANDARD -> HIGH) С ПУЛОМ ОЧЕРЕДИ
-           ========================================================================== */
         let isFastConnection = true;
         let desktopStdObserver = null;
         let lightboxHighTimer = null;
 
-        const MAX_CONCURRENT_STD_LOADS = 3;
+        const MAX_CONCURRENT_STD_LOADS = IS_WEBKIT ? 2 : 3;
         let activeStdLoads = 0;
         const stdUpgradeQueue = [];
 
@@ -1452,7 +1390,7 @@
             const loader = new Image();
             loader.decoding = 'async';
             loader.onload = () => {
-                if (typeof loader.decode === 'function') {
+                if (!IS_WEBKIT && typeof loader.decode === 'function') {
                     loader.decode().then(() => finishStdLoad(stdSrc, true)).catch(() => finishStdLoad(stdSrc, true));
                 } else {
                     finishStdLoad(stdSrc, true);
@@ -1536,7 +1474,7 @@
             const hiLoader = new Image();
             hiLoader.decoding = 'async';
             hiLoader.onload = () => {
-                if (typeof hiLoader.decode === 'function') {
+                if (!IS_WEBKIT && typeof hiLoader.decode === 'function') {
                     hiLoader.decode().then(() => finishHighLoad(highSrc, true)).catch(() => finishHighLoad(highSrc, true));
                 } else {
                     finishHighLoad(highSrc, true);
@@ -1550,9 +1488,6 @@
             hiLoader.src = highSrc;
         }
 
-        // Чтобы после прокрутки 60–100 фотографий браузер не держал в видеопамяти сотни 2560px текстур
-        // (из-за чего начинались лаги внизу галереи), карточки в зоне видимости получают Standard-версию,
-        // а карточки, ушедшие далеко за пределы экрана (>2600px), освобождают VRAM обратно до лёгкой Lite-версии!
         function initDesktopScrollStandardUpgrade() {
             if (desktopStdObserver) desktopStdObserver.disconnect();
             if (isMobileViewport() || !('IntersectionObserver' in window)) return;
@@ -1569,16 +1504,16 @@
 
                     if (entry.isIntersecting) {
                         upgradeCardToStandardRes(card);
-                    } else if (img.dataset.stdUpgraded === '1' && img.dataset.liteSrc) {
+                    } else if (!IS_WEBKIT && img.dataset.stdUpgraded === '1' && img.dataset.liteSrc) {
                         const r = entry.boundingClientRect;
-                        if (r.bottom < -2400 || r.top > window.innerHeight + 2400) {
+                        if (r.bottom < -3200 || r.top > window.innerHeight + 3200) {
                             img.src = img.dataset.liteSrc;
                             delete img.dataset.stdUpgraded;
                         }
                     }
                 });
             }, {
-                rootMargin: '350px 0px'
+                rootMargin: '320px 0px'
             });
 
             activePageEl.querySelectorAll('.sortable-photo-item').forEach(card => {
@@ -1586,9 +1521,6 @@
             });
         }
 
-        /* ==========================================================================
-           ТАКТИЛЬНЫЙ ОТКЛИК (HAPTIC FEEDBACK — КОРОТКИЙ ПОСТУКИВАЮЩИЙ ИМПУЛЬС)
-           ========================================================================== */
         let hapticCheckbox = null;
 
         function initHapticEngine() {
@@ -1613,9 +1545,6 @@
             } catch (_) {}
         }
 
-        /* ==========================================================================
-           0. ГЕНЕРАЦИЯ СЕТКИ 6x3 РАНДОМНЫХ ФОТО В КАРТОЧКАХ РАЗДЕЛОВ + ЛИНЗА РАЗБЛЮРА
-           ========================================================================== */
         function populateCardGrid6x3(cardId, fileList) {
             const card = document.getElementById(cardId);
             if (!card) return;
@@ -1644,9 +1573,6 @@
             });
         }
 
-        /* ==========================================================================
-           1. ЭФФЕКТ КАРТОЧЕК STEAM + СФЕРА РАЗБЛЮРА (С RAF-ТРОТТЛИНГОМ И БЕЗ REFLOW НА СКРОЛЛЕ)
-           ========================================================================== */
         function applyCardTiltAndLens(card, clientX, clientY) {
             const glare = card.querySelector('.steam-glare');
             const rect = card._restRect || card.getBoundingClientRect();
@@ -1787,9 +1713,6 @@
             }, { passive: true });
         }
 
-        /* ==========================================================================
-           1.5. ПРОСМОТРЩИК (LIGHTBOX): ПОЭТАПНАЯ ПОДГРУЗКА (LITE -> STANDARD -> HIGH)
-           ========================================================================== */
         let mobileLightboxOpen = false;
         let mobileLightboxItems = [];
         let mobileLightboxIndex = 0;
@@ -1860,7 +1783,8 @@
             const bright = (1 - 0.28 * eased).toFixed(2);
             viewport.style.setProperty('--lb-bright', bright);
 
-            const rawSize = Math.max(2, Math.round(2 + 12 * eased));
+            const stepQuantum = IS_WEBKIT ? 4 : 2;
+            const rawSize = Math.max(2, Math.round((2 + 12 * eased) / stepQuantum) * stepQuantum);
             const pixelSize = rawSize % 2 === 0 ? rawSize : rawSize + 1;
 
             if (pixelSize !== lastAppliedLbPixelSize) {
@@ -1881,6 +1805,7 @@
 
         function animateLightboxPixel(targetState, duration = 260, onDone) {
             if (lbPixelAnimRaf) cancelAnimationFrame(lbPixelAnimRaf);
+
             const startVal = lbCurrentPixelProgress;
             const delta = targetState - startVal;
             const startTime = performance.now();
@@ -2233,9 +2158,6 @@
             });
         }
 
-        /* ==========================================================================
-           2. ЛАМЕЛЬНЫЙ ЗАТВОР + ОПТИМИЗИРОВАННАЯ СТУПЕНЧАТАЯ ПИКСЕЛИЗАЦИЯ ЭКРАНА
-           ========================================================================== */
         let lastAppliedShutterPixelSize = -1;
 
         function renderXT4ShutterFrame(progress) {
@@ -2307,7 +2229,8 @@
             viewport.classList.add('shutter-pixel-active');
             overlay.classList.add('active');
 
-            const rawPixelSize = Math.max(2, Math.round(2 + 26 * easedProgress));
+            const stepQuantum = IS_WEBKIT ? 6 : 2;
+            const rawPixelSize = Math.max(2, Math.round((2 + 26 * easedProgress) / stepQuantum) * stepQuantum);
             const pixelSize = rawPixelSize % 2 === 0 ? rawPixelSize : rawPixelSize + 1;
 
             if (pixelSize !== lastAppliedShutterPixelSize) {
@@ -2323,7 +2246,9 @@
                 }
 
                 overlay.style.setProperty('--px-grid-size', `${pixelSize}px`);
-                overlay.style.setProperty('--px-blur', `${(easedProgress * 4).toFixed(1)}px`);
+                if (!IS_WEBKIT) {
+                    overlay.style.setProperty('--px-blur', `${(easedProgress * 4).toFixed(1)}px`);
+                }
             }
         }
 
@@ -2469,9 +2394,6 @@
             });
         }
 
-        /* ==========================================================================
-           3. ЖУРНАЛЬНАЯ СЕТКА И 3 УРОВНЯ КАЧЕСТВА (LITE -> STANDARD -> HIGH)
-           ========================================================================== */
         const SPAN_LABELS = {
             '4': '1/3',
             '5': 'узкий',
@@ -2684,9 +2606,6 @@
             document.addEventListener('pointercancel', finish);
         }
 
-        /* ==========================================================================
-           4. РЕЖИМ КОНСТРУКТОРА
-           ========================================================================== */
         let isEditMode = new URLSearchParams(window.location.search).get('edit') === '1';
         let draggedElement = null;
         let deletedHistory = [];
