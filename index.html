@@ -80,18 +80,12 @@
         }
 
         html.is-webkit #app-viewport.shutter-pixel-active,
-        html.is-webkit #app-viewport.lightbox-pixel-active {
+        html.is-webkit #app-viewport.lightbox-pixel-active,
+        html.is-gecko #app-viewport.shutter-pixel-active,
+        html.is-gecko #app-viewport.lightbox-pixel-active {
             will-change: auto;
             filter: none !important;
             -webkit-filter: none !important;
-        }
-
-        html.is-gecko #app-viewport.shutter-pixel-active {
-            filter: contrast(1.1);
-        }
-
-        html.is-gecko #app-viewport.lightbox-pixel-active {
-            filter: brightness(var(--lb-bright, 0.72)) contrast(1.08) blur(2.5px);
         }
 
         #webkit-pixel-surface {
@@ -103,6 +97,7 @@
             pointer-events: none;
             display: none;
             image-rendering: -webkit-optimize-contrast;
+            image-rendering: -moz-crisp-edges;
             image-rendering: crisp-edges;
             image-rendering: pixelated;
             transform: translateZ(0);
@@ -132,7 +127,8 @@
             -webkit-backdrop-filter: blur(var(--px-blur, 0px)) contrast(1.18);
         }
 
-        html.is-webkit #shutter-pixel-grid-overlay {
+        html.is-webkit #shutter-pixel-grid-overlay,
+        html.is-gecko #shutter-pixel-grid-overlay {
             backdrop-filter: none !important;
             -webkit-backdrop-filter: none !important;
         }
@@ -863,6 +859,7 @@
         const SHUTTER_MODE = 'lamellar';
         const IS_GECKO = document.documentElement.classList.contains('is-gecko');
         const IS_WEBKIT = document.documentElement.classList.contains('is-webkit');
+        const USE_GPU_PIXEL_SURFACE = IS_WEBKIT || IS_GECKO;
         let currentPage = 'home';
         let isShutterAnimating = false;
 
@@ -926,7 +923,7 @@
         }
 
         function captureWebKitViewportSnapshot() {
-            if (!IS_WEBKIT) return;
+            if (!USE_GPU_PIXEL_SURFACE) return;
             const vw = window.innerWidth;
             const vh = window.innerHeight;
             if (!wkSourceSnapshotCanvas) {
@@ -1076,7 +1073,7 @@
         }
 
         function renderWebKitPixelSurface(pixelSize, brightnessVal = 1) {
-            if (!IS_WEBKIT) return;
+            if (!USE_GPU_PIXEL_SURFACE) return;
             const surface = document.getElementById('webkit-pixel-surface');
             if (!surface) return;
 
@@ -1125,7 +1122,7 @@
         }
 
         function hideWebKitPixelSurface() {
-            if (!IS_WEBKIT) return;
+            if (!USE_GPU_PIXEL_SURFACE) return;
             const surface = document.getElementById('webkit-pixel-surface');
             if (surface) surface.classList.remove('active');
             wkSourceSnapshotCanvas = null;
@@ -1500,7 +1497,7 @@
             if (isViewportFilterLocked) return;
             lockedScrollY = window.scrollY || window.pageYOffset || 0;
 
-            if (IS_WEBKIT) {
+            if (USE_GPU_PIXEL_SURFACE) {
                 captureWebKitViewportSnapshot();
                 isViewportFilterLocked = true;
                 return;
@@ -1605,7 +1602,7 @@
                 return;
             }
 
-            if (IS_WEBKIT) {
+            if (USE_GPU_PIXEL_SURFACE) {
                 hideWebKitPixelSurface();
                 isViewportFilterLocked = false;
                 return;
@@ -1661,7 +1658,7 @@
                 frozenGalleryState.lastCenteredCard = cardEl;
             } else {
                 cardEl.scrollIntoView({ behavior: 'instant', block: 'center' });
-                if (IS_WEBKIT && mobileLightboxOpen) {
+                if (USE_GPU_PIXEL_SURFACE && mobileLightboxOpen) {
                     captureWebKitViewportSnapshot();
                     const rawSize = Math.max(2, Math.round(2 + 12 * lbCurrentPixelProgress));
                     const pixelSize = rawSize % 2 === 0 ? rawSize : rawSize + 1;
@@ -1840,7 +1837,7 @@
             if (!activePageEl || currentPage === 'home') return;
 
             desktopStdObserver = new IntersectionObserver((entries) => {
-                if (isViewportFilterLocked && !IS_WEBKIT) return;
+                if (isViewportFilterLocked && !USE_GPU_PIXEL_SURFACE) return;
                 entries.forEach(entry => {
                     const card = entry.target;
                     const img = card.querySelector('img');
@@ -2138,9 +2135,9 @@
 
             if (pixelSize !== lastAppliedLbPixelSize) {
                 lastAppliedLbPixelSize = pixelSize;
-                if (IS_WEBKIT) {
+                if (USE_GPU_PIXEL_SURFACE) {
                     renderWebKitPixelSurface(pixelSize, brightVal);
-                } else if (!IS_GECKO && flood && tileBox && dilate) {
+                } else if (flood && tileBox && dilate) {
                     const halfRadius = Math.max(1, Math.floor(pixelSize / 2));
                     flood.setAttribute('x', String(halfRadius));
                     flood.setAttribute('y', String(halfRadius));
@@ -2585,9 +2582,9 @@
             if (pixelSize !== lastAppliedShutterPixelSize) {
                 lastAppliedShutterPixelSize = pixelSize;
 
-                if (IS_WEBKIT) {
+                if (USE_GPU_PIXEL_SURFACE) {
                     renderWebKitPixelSurface(pixelSize, 1);
-                } else if (!IS_GECKO && flood && tileBox && dilate) {
+                } else if (flood && tileBox && dilate) {
                     const halfRadius = Math.max(1, Math.floor(pixelSize / 2));
                     flood.setAttribute('x', String(halfRadius));
                     flood.setAttribute('y', String(halfRadius));
@@ -2597,7 +2594,7 @@
                 }
 
                 overlay.style.setProperty('--px-grid-size', `${pixelSize}px`);
-                if (!IS_WEBKIT) {
+                if (!USE_GPU_PIXEL_SURFACE) {
                     overlay.style.setProperty('--px-blur', `${(easedProgress * 4).toFixed(1)}px`);
                 }
             }
@@ -2711,7 +2708,7 @@
             window.scrollTo({ top: 0, behavior: 'instant' });
             if (document.getElementById('app-viewport').classList.contains('shutter-pixel-active')) {
                 lockViewportForPixelFilter();
-                if (IS_WEBKIT && lastAppliedShutterPixelSize > 2) {
+                if (USE_GPU_PIXEL_SURFACE && lastAppliedShutterPixelSize > 2) {
                     renderWebKitPixelSurface(lastAppliedShutterPixelSize, 1);
                 }
             }
